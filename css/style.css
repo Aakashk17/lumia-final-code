@@ -1,0 +1,304 @@
+/* ==========================================================================
+   Lumia International Spa — production stylesheet
+   --------------------------------------------------------------------------
+   Every element's own `style="..."` attribute in the HTML is left exactly as
+   authored — colours, spacing, grid layouts, etc. all live inline by design.
+   This file supplies only what inline styles cannot express (hover/focus
+   states, keyframe animations, the mobile navigation) PLUS a mobile-responsive
+   layer that overrides specific inline values via attribute-substring
+   selectors (`[style*="..."]`) with `!important`. That is the only way to
+   make an already-inline-styled page responsive without editing every
+   element's style attribute by hand.
+   ========================================================================== */
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+a { color: #302310; text-decoration: none; }
+a:hover { color: #54442f; }
+
+.ms {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  direction: ltr;
+}
+
+/* ── Shared hover/transition rules (descendant-on-ancestor-hover and focus
+   states can't be expressed inline) ── */
+.lumia-card:hover .lumia-zoom { transform: scale(1.06); }
+.lumia-card:hover .lumia-scrim { opacity: 1; }
+.lumia-card:hover .lumia-rise { transform: translateY(0); opacity: 1; }
+.lumia-zoom { transition: transform 1.1s cubic-bezier(.16,1,.3,1); }
+.lumia-scrim { transition: opacity .5s ease; }
+.lumia-rise { transition: transform .5s cubic-bezier(.16,1,.3,1), opacity .5s ease; }
+
+.testi-card { transition: transform .5s cubic-bezier(.16,1,.3,1), box-shadow .5s cubic-bezier(.16,1,.3,1); }
+.testi-card:hover { transform: translateY(-6px); box-shadow: 0 40px 70px -28px rgba(71,56,36,.4); }
+
+.stat-card { transition: transform .5s cubic-bezier(.16,1,.3,1), box-shadow .5s cubic-bezier(.16,1,.3,1); }
+.stat-card:hover { transform: translateY(-6px); box-shadow: 0 30px 60px -22px rgba(71,56,36,.22); }
+
+.why-card { transition: transform .5s cubic-bezier(.16,1,.3,1), box-shadow .5s cubic-bezier(.16,1,.3,1), background-color .5s; }
+.why-card:hover { transform: translateY(-6px); box-shadow: 0 30px 60px -20px rgba(71,56,36,.25); }
+/* icons are static until hover — a restrained lift, not a spin */
+.why-card:hover .why-ic { transform: translateY(-4px) scale(1.12); color: #302310; }
+.why-ic { transition: transform .45s cubic-bezier(.16,1,.3,1), color .45s ease; }
+
+.arrowbtn { transition: transform .3s ease, background-color .5s ease, color .5s ease, border-color .5s ease; }
+.arrowbtn:hover { transform: scale(1.04); }
+
+.textlink .ms { transition: transform .5s cubic-bezier(.16,1,.3,1); }
+.textlink:hover .ms { transform: translateX(6px); }
+
+.soc { transition: transform .4s cubic-bezier(.16,1,.3,1), background-color .4s ease; }
+.soc:hover { transform: translateY(-3px); background: #473824; color: #f7dfc2; }
+
+@keyframes lumia-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(10px); } }
+
+/* ── Home: infinite gallery marquee ── */
+.marquee { overflow: hidden; width: 100%; }
+/* width:max-content stops the flex row shrinking to the viewport, so the two
+   groups keep their true width and -50% lands exactly one group along. */
+.marquee-track { display: flex; width: max-content; will-change: transform; animation: lumia-marquee 72s linear infinite; }
+.marquee-group { display: flex; gap: 24px; padding-right: 24px; }
+.marquee:hover .marquee-track { animation-play-state: paused; }
+@keyframes lumia-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; } }
+
+/* ── Services: coverflow "The Menu" carousel ── */
+.caro { scrollbar-width: none; -ms-overflow-style: none; }
+.caro::-webkit-scrollbar { display: none; }
+.mslide { flex: 0 0 var(--mslide-w, 380px); scroll-snap-align: center; display: flex; justify-content: center; }
+.mcard {
+  width: calc(100% - 24px); display: flex; flex-direction: column; background: #fff1e7;
+  border: 1px solid rgba(208,197,185,.4); border-radius: 12px; overflow: hidden;
+  transform: scale(var(--s, .84)); opacity: var(--o, .55);
+  box-shadow: 0 20px 40px -28px rgba(71,56,36,.28);
+  transition: transform .55s cubic-bezier(.16,1,.3,1), opacity .55s ease, box-shadow .55s ease;
+}
+.mslide.is-centre .mcard { box-shadow: 0 40px 72px -30px rgba(71,56,36,.42); }
+.mbody { padding: 32px; display: flex; flex-direction: column; flex: 1; }
+.mdot { width: 7px; height: 7px; border-radius: 9999px; background: #d0c5b9; border: none; padding: 0; cursor: pointer; transition: background-color .4s ease, width .4s ease; }
+.mdot.on { width: 26px; background: #473824; }
+@media (prefers-reduced-motion: reduce) { .mcard { transition: none; } }
+
+/* ── Appointment: booking wizard ── */
+.fld { font-family: 'Comfortaa', sans-serif; font-size: 15px; color: #302310; background: #fff8f4; border: 1px solid #d0c5b9; border-radius: 10px; padding: 15px 16px; outline: none; width: 100%; transition: border-color .4s ease, box-shadow .4s ease; }
+.fld:focus { border-color: #473824; box-shadow: 0 0 0 3px rgba(71,56,36,.12); }
+.fld::placeholder { color: #a99e90; }
+.opt { transition: border-color .4s ease, background-color .4s ease, transform .4s ease, box-shadow .4s ease; cursor: pointer; }
+.opt:hover { transform: translateY(-3px); box-shadow: 0 20px 40px -24px rgba(71,56,36,.3); }
+.opt.sel { border-color: #473824; box-shadow: 0 18px 40px -22px rgba(71,56,36,.35); }
+.svc-card:hover .svc-img { transform: scale(1.08); }
+.svc-img { transition: transform 1.1s cubic-bezier(.16,1,.3,1); }
+.opt.sel .optcheck { opacity: 1; transform: scale(1); }
+.optcheck { opacity: 0; transform: scale(.4); transition: opacity .3s ease, transform .3s ease; }
+.step-panel { animation: fadeStep .5s cubic-bezier(.16,1,.3,1); }
+@keyframes fadeStep { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ==========================================================================
+   Mobile navigation (new markup, purely additive — no existing inline style
+   is touched). Hidden above 880px; replaces the desktop link row below it.
+   ========================================================================== */
+.nav-toggle { display: none; background: none; border: none; cursor: pointer; color: #302310; padding: 4px; }
+.nav-toggle .ms { font-size: 28px; }
+.nav-mobile-panel {
+  position: absolute; top: 100%; left: 0; right: 0;
+  display: flex; flex-direction: column; background: #fff8f4;
+  box-shadow: 0 20px 40px -20px rgba(71,56,36,.25);
+  max-height: 0; overflow: hidden; transition: max-height .35s ease;
+}
+.nav-mobile-panel.open { max-height: 320px; }
+.nav-mobile-panel a { padding: 16px 24px; font-size: 15px; font-weight: 500; color: #4d463d; border-bottom: 1px solid rgba(208,197,185,.25); }
+.nav-mobile-panel a.nav-active { color: #302310; }
+
+@media (max-width: 880px) {
+  .nav-links { display: none !important; }
+  .nav-toggle { display: inline-flex !important; align-items: center; justify-content: center; }
+}
+@media (min-width: 881px) {
+  .nav-mobile-panel { display: none !important; }
+}
+
+/* ==========================================================================
+   Mobile-responsive layer
+   --------------------------------------------------------------------------
+   Every rule below targets an existing inline `style="..."` value via
+   attribute-substring matching instead of editing that value directly. The
+   trailing ";" (or closing quote) is always included in the match so a
+   shorter value (e.g. "0 64px") can never accidentally match as a prefix of
+   a longer one that starts the same way (e.g. "0 64px 120px").
+   ========================================================================== */
+@media (max-width: 880px) {
+  /* Section gutters: 64px side padding is a wide-viewport gutter; every
+     section on every page uses one of these exact shorthand values.
+     GSAP rewrites the style attribute of any element it directly animates
+     (every .reveal-up section, every .stagger-item) into the browser's
+     canonical form, which inserts a space after the property's colon —
+     "padding:148px" becomes "padding: 148px". Both forms are matched below
+     or the rule silently stops applying the moment GSAP touches that
+     element (which happens to most of the elements padded this way, since
+     the big padding usually sits directly on the .reveal-up section). */
+  [style*="padding:0 64px;"],
+  [style*='padding:0 64px"'],
+  [style*="padding: 0 64px;"],
+  [style*='padding: 0 64px"']
+    { padding: 0 20px !important; }
+  [style*="padding:0 64px 120px;"],
+  [style*='padding:0 64px 120px"'],
+  [style*="padding: 0 64px 120px;"],
+  [style*='padding: 0 64px 120px"']
+    { padding: 0 20px 64px !important; }
+  [style*="padding:100px 64px;"],
+  [style*='padding:100px 64px"'],
+  [style*="padding: 100px 64px;"],
+  [style*='padding: 100px 64px"']
+    { padding: 56px 20px !important; }
+  [style*="padding:120px 64px;"],
+  [style*='padding:120px 64px"'],
+  [style*="padding: 120px 64px;"],
+  [style*='padding: 120px 64px"']
+    { padding: 64px 20px !important; }
+  [style*="padding:120px 64px 80px;"],
+  [style*='padding:120px 64px 80px"'],
+  [style*="padding: 120px 64px 80px;"],
+  [style*='padding: 120px 64px 80px"']
+    { padding: 64px 20px 48px !important; }
+  [style*="padding:140px 64px;"],
+  [style*='padding:140px 64px"'],
+  [style*="padding: 140px 64px;"],
+  [style*='padding: 140px 64px"']
+    { padding: 72px 20px !important; }
+  [style*="padding:148px 64px 72px;"],
+  [style*='padding:148px 64px 72px"'],
+  [style*="padding: 148px 64px 72px;"],
+  [style*='padding: 148px 64px 72px"']
+    { padding: 72px 20px 40px !important; }
+  [style*="padding:20px 64px;"],
+  [style*='padding:20px 64px"'],
+  [style*="padding: 20px 64px;"],
+  [style*='padding: 20px 64px"']
+    { padding: 16px 20px !important; }
+  [style*="padding:32px 64px;"],
+  [style*='padding:32px 64px"'],
+  [style*="padding: 32px 64px;"],
+  [style*='padding: 32px 64px"']
+    { padding: 20px 20px !important; }
+  [style*="padding:40px 64px 120px;"],
+  [style*='padding:40px 64px 120px"'],
+  [style*="padding: 40px 64px 120px;"],
+  [style*='padding: 40px 64px 120px"']
+    { padding: 28px 20px 56px !important; }
+  [style*="padding:60px 64px 120px;"],
+  [style*='padding:60px 64px 120px"'],
+  [style*="padding: 60px 64px 120px;"],
+  [style*='padding: 60px 64px 120px"']
+    { padding: 40px 20px 64px !important; }
+  [style*="padding:60px 64px 40px;"],
+  [style*='padding:60px 64px 40px"'],
+  [style*="padding: 60px 64px 40px;"],
+  [style*='padding: 60px 64px 40px"']
+    { padding: 40px 20px 28px !important; }
+  [style*="padding:64px;"],
+  [style*='padding:64px"'],
+  [style*="padding: 64px;"],
+  [style*='padding: 64px"']
+    { padding: 28px !important; }
+  [style*="padding:72px 64px;"],
+  [style*='padding:72px 64px"'],
+  [style*="padding: 72px 64px;"],
+  [style*='padding: 72px 64px"']
+    { padding: 40px 20px !important; }
+  [style*="padding:80px 64px 40px;"],
+  [style*='padding:80px 64px 40px"'],
+  [style*="padding: 80px 64px 40px;"],
+  [style*='padding: 80px 64px 40px"']
+    { padding: 48px 20px 28px !important; }
+  [style*="padding:96px 64px;"],
+  [style*='padding:96px 64px"'],
+  [style*="padding: 96px 64px;"],
+  [style*='padding: 96px 64px"']
+    { padding: 48px 20px !important; }
+  /* A couple of oversized card paddings worth shrinking specifically */
+  [style*="padding:56px;"], [style*='padding:56px"'], [style*="padding: 56px;"], [style*='padding: 56px"'] { padding: 28px !important; }
+  [style*="padding:36px;"], [style*='padding:36px"'], [style*="padding: 36px;"], [style*='padding: 36px"'] { padding: 24px !important; }
+
+  /* Grid layouts: collapse every multi-column inline grid to a single
+     column. The calendar's own 7-day-of-week grid (repeat(7,1fr)) is
+     deliberately not matched here — it must stay 7 columns at any width.
+     Both colon-spacing forms are matched throughout this block for the same
+     GSAP-reformatting reason described above. */
+  [style*="grid-template-columns:7fr 5fr"], [style*="grid-template-columns: 7fr 5fr"],
+  [style*="grid-template-columns:5fr 7fr"], [style*="grid-template-columns: 5fr 7fr"],
+  [style*="grid-template-columns:2fr 1fr"], [style*="grid-template-columns: 2fr 1fr"],
+  [style*="grid-template-columns:8fr 4fr"], [style*="grid-template-columns: 8fr 4fr"],
+  [style*="grid-template-columns:1fr 1fr"], [style*="grid-template-columns: 1fr 1fr"],
+  [style*="grid-template-columns:5fr 5fr"], [style*="grid-template-columns: 5fr 5fr"],
+  [style*="grid-template-columns:352px 1fr"], [style*="grid-template-columns: 352px 1fr"]
+    { grid-template-columns: 1fr !important; }
+
+  /* Footer's 4-column layout: two columns at tablet width, one below 480px. */
+  [style*="grid-template-columns:5fr 2fr 2fr 3fr"], [style*="grid-template-columns: 5fr 2fr 2fr 3fr"]
+    { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* 3- and 4-up feature/stat grids read better as 2 columns on a phone than
+     either a cramped row of 3-4 or a very tall single column. */
+  [style*="grid-template-columns:repeat(3,1fr)"], [style*="grid-template-columns: repeat(3,1fr)"],
+  [style*="grid-template-columns:repeat(4,1fr)"], [style*="grid-template-columns: repeat(4,1fr)"]
+    { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Fixed-height bento grids (Home's Featured Rituals, About's Sanctuary)
+     must go auto-height once their columns stack, and their flex:1 children
+     need an explicit height to avoid collapsing to 0 in an auto-height
+     flex column. */
+  [style*="height:680px;"], [style*="height: 680px;"] { height: auto !important; }
+  [style*="height:620px;"], [style*="height: 620px;"] { height: auto !important; }
+  .lumia-card[style*="flex:1"], .lumia-card[style*="flex: 1"] { min-height: 220px !important; }
+
+  /* Appointment: sidebar shouldn't stay sticky once it's stacked below the
+     wizard in normal document flow. */
+  [style*="position:sticky;top:110px"], [style*="position: sticky;top:110px"],
+  [style*="position:sticky; top:110px"], [style*="position: sticky; top:110px"] { position: static !important; }
+
+  /* Decorative floating hero cards collide with the centred hero text on
+     narrow screens — hidden rather than repositioned. */
+  .hero-float { display: none !important; }
+
+  /* Gallery marquee cards are intentionally oversized/cropped on desktop;
+     scaled down so more than a sliver of each card shows on a phone. */
+  [style*="flex:0 0 520px;"], [style*="flex: 0 0 520px;"] { flex: 0 0 280px !important; }
+  [style*="flex:0 0 360px;"], [style*="flex: 0 0 360px;"] { flex: 0 0 220px !important; }
+
+  /* Testimonial sticky-drift section: the two-lane parallax only makes sense
+     side-by-side on a wide screen. main.js skips wiring the drift animation
+     below this breakpoint (via ScrollTrigger.matchMedia); this stacks both
+     lanes as normal static content instead of the pinned 340vh layout. */
+  #testi { height: auto !important; }
+  #testi > div[style*="position:sticky"] { position: static !important; height: auto !important; padding: 56px 20px !important; }
+  #testi > div[style*="position:sticky"] > div[style*="position:absolute"] { position: static !important; padding: 0 0 32px !important; }
+  .testi-lane { position: static !important; width: 100% !important; transform: none !important; margin-bottom: 32px; }
+
+  /* Typography: the desktop type scale (up to 88px headings) is tuned for
+     wide layouts; every major heading converges to a smaller, consistent
+     mobile scale regardless of its section. */
+  h1 { font-size: 34px !important; line-height: 1.18 !important; }
+  h2 { font-size: 28px !important; line-height: 1.22 !important; }
+  h3 { font-size: 19px !important; }
+  #heroTitle { font-size: 34px !important; }
+}
+
+@media (max-width: 480px) {
+  /* Below this width even a 2-up grid is tight for form fields and the
+     footer's link columns. */
+  [style*="grid-template-columns:repeat(2,1fr)"], [style*="grid-template-columns: repeat(2,1fr)"] { grid-template-columns: 1fr !important; }
+  [style*="grid-template-columns:5fr 2fr 2fr 3fr"], [style*="grid-template-columns: 5fr 2fr 2fr 3fr"] { grid-template-columns: 1fr !important; }
+  /* Booking-progress step labels ("Service", "Date & time"...) crowd the
+     numbered dots at this width — the dots and connecting bars still show
+     the current step clearly on their own. */
+  .plbl { display: none !important; }
+}

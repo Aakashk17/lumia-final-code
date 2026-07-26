@@ -1,0 +1,561 @@
+/* ==========================================================================
+   Lumia International Spa — shared site script
+   --------------------------------------------------------------------------
+   One file, loaded on every page. Each page-specific block guards itself on
+   an element that only exists on that page, so this file is safe to include
+   everywhere without checking which page it's on from the outside.
+   GSAP + ScrollTrigger are loaded via <script> tags before this file (see the
+   HTML), so they're already available here — no polling needed.
+   ========================================================================== */
+(function () {
+  'use strict';
+
+  function run() {
+    gsap.registerPlugin(ScrollTrigger);
+
+    // initHomePage runs first: its hero-gate pin inserts ~130vh of pinSpacing
+    // into the document. Creating any other ScrollTrigger (like the letter
+    // reveals in initCommon) beforehand leaves it measuring the page before
+    // that space exists, so it locks in stale start/end positions that never
+    // fire correctly afterward.
+    initHomePage();
+    initCommon();
+    initAboutPage();
+    initServicesPage();
+    initAppointmentPage();
+
+    ScrollTrigger.refresh();
+    // Fonts and images settle after first paint and can shift section heights,
+    // which moves every scroll-trigger position — re-measure once things
+    // have stopped moving.
+    const settle = () => ScrollTrigger.refresh();
+    requestAnimationFrame(() => requestAnimationFrame(settle));
+    window.addEventListener('load', settle);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(settle);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', run);
+  } else {
+    run();
+  }
+
+  // ────────────────────────────────────────────────────────────────────────
+  // Common: present on every page
+  // ────────────────────────────────────────────────────────────────────────
+  function initCommon() {
+    const qa = (s) => Array.from(document.querySelectorAll(s));
+
+    // Letter-by-letter colour reveal on scroll
+    qa('[data-reveal]').forEach((el) => {
+      if (el.dataset.split === '1') return;
+      el.dataset.split = '1';
+      const startC = el.dataset.start || '#dac3a7';
+      const finalC = el.dataset.final || '#302310';
+      const txt = el.textContent;
+      el.textContent = '';
+      const spans = [];
+      for (const ch of txt) {
+        const s = document.createElement('span');
+        s.textContent = ch;
+        s.style.color = startC;
+        if (ch === ' ') s.style.whiteSpace = 'pre';
+        el.appendChild(s);
+        spans.push(s);
+      }
+      const isHero = el.tagName === 'H1';
+      gsap.to(spans, {
+        color: finalC,
+        ease: 'none',
+        stagger: 0.4,
+        scrollTrigger: {
+          trigger: el,
+          start: isHero ? 'top 92%' : 'top 84%',
+          end: isHero ? 'top 45%' : 'top 42%',
+          scrub: 0.9,
+          invalidateOnRefresh: true,
+        },
+      });
+    });
+
+    // Generic parallax for any element carrying data-parallax="<amount>"
+    qa('[data-parallax]').forEach((el) => {
+      const amt = parseFloat(el.dataset.parallax) || 10;
+      gsap.fromTo(el, { yPercent: -amt }, {
+        yPercent: amt, ease: 'none',
+        scrollTrigger: { trigger: el.parentElement, start: 'top bottom', end: 'bottom top', scrub: true },
+      });
+    });
+
+    // Section scroll reveals
+    qa('.reveal-up').forEach((sec) => {
+      gsap.fromTo(sec, { opacity: 0, y: 48 }, {
+        opacity: 1, y: 0, duration: 1.2, ease: 'power2.out',
+        scrollTrigger: { trigger: sec, start: 'top 85%', toggleActions: 'play none none none' },
+      });
+    });
+
+    // Nav shadow on scroll
+    const nav = document.getElementById('lumiaNav');
+    if (nav) {
+      window.addEventListener('scroll', () => {
+        nav.style.boxShadow = window.scrollY > 80 ? '0 10px 30px -15px rgba(71,56,36,.25)' : 'none';
+      });
+    }
+
+    // Mobile nav toggle
+    const navToggle = document.getElementById('navToggle');
+    const navPanel = document.getElementById('navMobilePanel');
+    if (navToggle && navPanel) {
+      const setOpen = (open) => {
+        navPanel.classList.toggle('open', open);
+        navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        const icon = navToggle.querySelector('.ms');
+        if (icon) icon.textContent = open ? 'close' : 'menu';
+      };
+      navToggle.addEventListener('click', () => setOpen(!navPanel.classList.contains('open')));
+      navPanel.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setOpen(false)));
+    }
+  }
+
+  // ────────────────────────────────────────────────────────────────────────
+  // Home (index.html) — guarded on the hero gate panels
+  // ────────────────────────────────────────────────────────────────────────
+  function initHomePage() {
+    const gateL = document.getElementById('gateL');
+    const gateR = document.getElementById('gateR');
+    if (!gateL || !gateR) return;
+    const qa = (s) => Array.from(document.querySelectorAll(s));
+
+    // Hero gate opening (pinned scroll). Built with a high refreshPriority:
+    // its pinSpacing inserts ~130vh into the document, so every trigger below
+    // it must measure the page only after this one has laid the spacer out.
+    gsap.set('#heroTitle', { scale: 1.06 });
+    const gateTl = gsap.timeline({
+      scrollTrigger: { trigger: '#top', start: 'top top', end: '+=130%', scrub: 0.6, pin: true, pinSpacing: true, anticipatePin: 1, refreshPriority: 10 },
+    });
+    gateTl
+      .to('.gate-only', { opacity: 0, y: -12, ease: 'power2.out' }, 0.05)
+      .to('#gateSeam', { opacity: 0, ease: 'power2.out' }, 0.05)
+      .to('#gateL', { xPercent: -100, ease: 'power3.inOut' }, 0)
+      .to('#gateR', { xPercent: 100, ease: 'power3.inOut' }, 0)
+      .to('#heroTitle', { scale: 1, ease: 'power3.inOut' }, 0);
+
+    // Mouse-follow parallax on floating hero cards (no-op on touch devices —
+    // mousemove simply never fires, and the cards are hidden on narrow
+    // viewports via CSS anyway).
+    const hero = document.getElementById('top');
+    const floats = qa('.hero-float');
+    if (hero && floats.length) {
+      const setters = floats.map((f) => ({
+        x: gsap.quickTo(f, 'x', { duration: 0.9, ease: 'power3.out' }),
+        y: gsap.quickTo(f, 'y', { duration: 0.9, ease: 'power3.out' }),
+        depth: parseFloat(f.dataset.depth) || 10,
+      }));
+      hero.addEventListener('mousemove', (e) => {
+        const r = hero.getBoundingClientRect();
+        const nx = (e.clientX - r.left) / r.width - 0.5;
+        const ny = (e.clientY - r.top) / r.height - 0.5;
+        setters.forEach((s) => { s.x(nx * s.depth); s.y(ny * s.depth); });
+      });
+      hero.addEventListener('mouseleave', () => { setters.forEach((s) => { s.x(0); s.y(0); }); });
+    }
+
+    // Bento stagger
+    const bento = qa('.stagger-item');
+    if (bento.length) {
+      gsap.from(bento, {
+        opacity: 0, y: 44, stagger: 0.18, duration: 1, ease: 'power2.out',
+        scrollTrigger: { trigger: '#rituals', start: 'top 72%' },
+      });
+    }
+
+    // Number count-up
+    qa('.stat-num').forEach((el) => {
+      const target = parseFloat(el.dataset.target) || 0;
+      const suffix = el.dataset.suffix || '';
+      const obj = { v: 0 };
+      gsap.to(obj, {
+        v: target, duration: 2.2, ease: 'power2.out',
+        scrollTrigger: { trigger: el, start: 'top 88%', toggleActions: 'play none none none' },
+        onUpdate: () => { el.textContent = Math.round(obj.v).toLocaleString('en-US') + suffix; },
+      });
+    });
+    const statCards = qa('.stat-card');
+    if (statCards.length) {
+      gsap.from(statCards, {
+        opacity: 0, y: 40, stagger: 0.15, duration: 1, ease: 'power2.out',
+        scrollTrigger: { trigger: statCards[0], start: 'top 88%' },
+      });
+    }
+
+    // Testimonials stream vertically upward past the pinned heading — this
+    // two-lane parallax only makes sense side-by-side on a wide viewport, so
+    // it's confined to widths above the mobile nav breakpoint; below that,
+    // CSS stacks both lanes as ordinary static content instead.
+    const testi = document.getElementById('testi');
+    if (testi) {
+      ScrollTrigger.matchMedia({
+        '(min-width: 881px)': function () {
+          qa('.testi-lane').forEach((lane) => {
+            const vh = window.innerHeight;
+            const h = lane.offsetHeight;
+            const startY = vh * (parseFloat(lane.dataset.start) || 1);
+            const endY = -(h + vh * 0.15);
+            gsap.fromTo(lane, { y: startY }, {
+              y: endY, ease: 'none',
+              scrollTrigger: { trigger: testi, start: 'top top', end: 'bottom bottom', scrub: 0.6 },
+            });
+          });
+        },
+      });
+    }
+
+    // Gallery drifts on a pure CSS marquee — no JS wiring needed.
+  }
+
+  // ────────────────────────────────────────────────────────────────────────
+  // About (about.html) — guarded on the cinematic hero
+  // ────────────────────────────────────────────────────────────────────────
+  function initAboutPage() {
+    const aboutBg = document.getElementById('aboutBg');
+    if (!aboutBg || !document.getElementById('aboutHero')) return;
+    gsap.to(aboutBg, {
+      yPercent: 14, ease: 'none',
+      scrollTrigger: { trigger: '#aboutHero', start: 'top top', end: 'bottom top', scrub: true },
+    });
+  }
+
+  // ────────────────────────────────────────────────────────────────────────
+  // Services (services.html) — guarded on the coverflow carousel track
+  // ────────────────────────────────────────────────────────────────────────
+  function initServicesPage() {
+    const track = document.getElementById('menuCaro');
+    if (!track) return;
+    const originals = Array.from(track.querySelectorAll('.mslide'));
+    if (!originals.length) return;
+    const dotsWrap = document.getElementById('menuDots');
+    const N = originals.length;
+
+    const SLIDE_MIN = 300;
+    const SLIDE_MAX = 380;
+    const HOLD = 3800;
+    const RESUME_AFTER = 7000;
+
+    // True infinite loop: duplicate the whole set before and after the real
+    // slides. Autoplay only ever drifts through the middle (real) copy; the
+    // moment the centred card is a clone, the track is snapped back by
+    // exactly one set width with no animation. Because the clone is
+    // pixel-identical to its real counterpart, that snap is invisible.
+    const frag = document.createDocumentFragment();
+    const cloneSet = () => originals.map((s) => {
+      const c = s.cloneNode(true);
+      c.setAttribute('aria-hidden', 'true');
+      c.querySelectorAll('a').forEach((a) => { a.tabIndex = -1; });
+      return c;
+    });
+    cloneSet().forEach((c) => frag.appendChild(c));
+    originals.forEach((s) => frag.appendChild(s));
+    cloneSet().forEach((c) => frag.appendChild(c));
+    track.innerHTML = '';
+    track.appendChild(frag);
+    const slides = Array.from(track.querySelectorAll('.mslide'));
+
+    let idle = null, timer = null, raf = null, current = N, groupShift = 0, correcting = false;
+
+    const layout = () => {
+      const w = Math.max(SLIDE_MIN, Math.min(SLIDE_MAX, track.clientWidth - 48));
+      track.style.setProperty('--mslide-w', w + 'px');
+      const pad = Math.max(0, (track.clientWidth - w) / 2);
+      track.style.paddingLeft = pad + 'px';
+      track.style.paddingRight = pad + 'px';
+      groupShift = (slides[N] && slides[0]) ? slides[N].offsetLeft - slides[0].offsetLeft : 0;
+    };
+
+    const paint = () => {
+      raf = null;
+      const centre = track.scrollLeft + track.clientWidth / 2;
+      const w = slides[0].offsetWidth || 1;
+      let best = current, bestDist = Infinity;
+      slides.forEach((s, i) => {
+        const sc = s.offsetLeft + s.offsetWidth / 2;
+        const t = Math.min(1, Math.abs(sc - centre) / (w * 1.5));
+        const card = s.firstElementChild;
+        card.style.setProperty('--s', (1 - 0.16 * t).toFixed(3));
+        card.style.setProperty('--o', (1 - 0.45 * t).toFixed(3));
+        if (Math.abs(sc - centre) < bestDist) { bestDist = Math.abs(sc - centre); best = i; }
+      });
+      slides.forEach((s, i) => s.classList.toggle('is-centre', i === best));
+      current = best;
+      if (dotsWrap) {
+        const logical = ((current % N) + N) % N;
+        Array.from(dotsWrap.children).forEach((d, i) => d.classList.toggle('on', i === logical));
+      }
+      if (!correcting && groupShift) {
+        if (current < N) { correcting = true; track.scrollLeft += groupShift; current += N; correcting = false; }
+        else if (current >= 2 * N) { correcting = true; track.scrollLeft -= groupShift; current -= N; correcting = false; }
+      }
+    };
+
+    const schedulePaint = () => { if (raf == null) raf = requestAnimationFrame(paint); };
+
+    const goTo = (i, smooth) => {
+      if (i < 0 || i >= slides.length) i = N + (((i - N) % N) + N) % N;
+      const s = slides[i];
+      if (!s) return;
+      track.scrollTo({
+        left: s.offsetLeft + s.offsetWidth / 2 - track.clientWidth / 2,
+        behavior: smooth === false ? 'auto' : 'smooth',
+      });
+    };
+
+    const play = () => { stop(); timer = setInterval(() => goTo(current + 1), HOLD); };
+    const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
+    const pause = () => { stop(); if (idle) clearTimeout(idle); idle = setTimeout(play, RESUME_AFTER); };
+
+    if (dotsWrap) {
+      originals.forEach((s, i) => {
+        const b = document.createElement('button');
+        b.className = 'mdot';
+        b.type = 'button';
+        b.setAttribute('aria-label', 'Show ' + (s.dataset.service || 'treatment ' + (i + 1)));
+        b.addEventListener('click', () => { goTo(N + i); pause(); });
+        dotsWrap.appendChild(b);
+      });
+    }
+
+    track.addEventListener('scroll', schedulePaint, { passive: true });
+    ['mouseenter', 'pointerdown', 'touchstart', 'wheel', 'keydown'].forEach((ev) =>
+      track.addEventListener(ev, pause, { passive: true }));
+    track.addEventListener('mouseleave', pause, { passive: true });
+    window.addEventListener('resize', () => { layout(); goTo(current, false); schedulePaint(); });
+
+    if (window.IntersectionObserver) {
+      new IntersectionObserver((es) => {
+        es.forEach((e) => { if (e.isIntersecting) play(); else stop(); });
+      }, { threshold: 0.35 }).observe(track);
+    } else { play(); }
+
+    layout();
+    goTo(N, false);
+    paint();
+    window.addEventListener('load', () => { layout(); goTo(current, false); schedulePaint(); });
+  }
+
+  // ────────────────────────────────────────────────────────────────────────
+  // Appointment (appointment.html) — guarded on the booking wizard section
+  // ────────────────────────────────────────────────────────────────────────
+  // This is the ONLY place the spa's WhatsApp number appears — change it here
+  // and the whole booking handoff follows. Currently a placeholder.
+  const WHATSAPP_NUMBER = '919876543210';
+
+  function initAppointmentPage() {
+    const bookSection = document.getElementById('book');
+    if (!bookSection) return;
+
+    // Hero background parallax
+    const heroBg = document.getElementById('heroBg');
+    if (heroBg) {
+      gsap.to(heroBg, {
+        yPercent: 14, ease: 'none',
+        scrollTrigger: { trigger: '#top', start: 'top top', end: 'bottom top', scrub: true },
+      });
+    }
+
+    const q = (s) => document.querySelector(s);
+    const qa = (s) => Array.from(document.querySelectorAll(s));
+    const data = { service: '', date: '', time: '', name: '', phone: '', email: '', notes: '' };
+    let step = 1;
+    const maxStep = 4;
+
+    // Service pagination (4 per page)
+    let svcPage = 1; const svcPages = 2;
+    const renderSvc = () => {
+      qa('.svc-card').forEach((c) => { c.style.display = String(c.dataset.page) === String(svcPage) ? 'flex' : 'none'; });
+      const lbl = q('#svcPage'); if (lbl) lbl.textContent = svcPage + ' / ' + svcPages;
+      const pv = q('#svcPrev'), nx = q('#svcNext');
+      if (pv) pv.style.opacity = svcPage === 1 ? '.4' : '1';
+      if (nx) nx.style.opacity = svcPage === svcPages ? '.4' : '1';
+    };
+    const sPrev = q('#svcPrev'), sNext = q('#svcNext');
+    if (sPrev) sPrev.addEventListener('click', () => { if (svcPage > 1) { svcPage--; renderSvc(); } });
+    if (sNext) sNext.addEventListener('click', () => { if (svcPage < svcPages) { svcPage++; renderSvc(); } });
+    renderSvc();
+
+    // Inline calendar (open by default)
+    const cal = q('#cal');
+    const view = new Date(); view.setDate(1);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const renderCal = () => {
+      if (!cal) return;
+      const y = view.getFullYear(), m = view.getMonth();
+      const firstDow = new Date(y, m, 1).getDay();
+      const nDays = new Date(y, m + 1, 0).getDate();
+      const canPrev = new Date(y, m, 1) > new Date(today.getFullYear(), today.getMonth(), 1);
+      let h = '';
+      h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">';
+      h += '<button data-cprev style="background:#f3e6db;border:none;width:36px;height:36px;border-radius:9999px;cursor:' + (canPrev ? 'pointer' : 'default') + ';color:' + (canPrev ? '#302310' : '#cabfb0') + ';display:flex;align-items:center;justify-content:center;"><span class="ms">chevron_left</span></button>';
+      h += '<div style="font-size:16px;font-weight:500;color:#302310;">' + monthNames[m] + ' ' + y + '</div>';
+      h += '<button data-cnext style="background:#f3e6db;border:none;width:36px;height:36px;border-radius:9999px;cursor:pointer;color:#302310;display:flex;align-items:center;justify-content:center;"><span class="ms">chevron_right</span></button>';
+      h += '</div>';
+      h += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px;">';
+      ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach((d) => { h += '<div style="text-align:center;font-size:11px;font-weight:500;letter-spacing:.06em;color:#a99e90;padding:6px 0;">' + d + '</div>'; });
+      h += '</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">';
+      for (let i = 0; i < firstDow; i++) h += '<div></div>';
+      for (let d = 1; d <= nDays; d++) {
+        const cur = new Date(y, m, d);
+        const iso = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+        const past = cur < today;
+        const isSel = data.date === iso;
+        const isToday = cur.getTime() === today.getTime();
+        let st = 'aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:14px;border-radius:9999px;transition:background-color .25s ease,color .25s ease;';
+        if (past) st += 'color:#cabfb0;cursor:default;';
+        else if (isSel) st += 'background:#473824;color:#fff;cursor:pointer;font-weight:500;';
+        else { st += 'color:#302310;cursor:pointer;'; if (isToday) st += 'border:1px solid #b7a187;'; }
+        h += '<div data-day="' + (past ? '' : iso) + '" style="' + st + '">' + d + '</div>';
+      }
+      h += '</div>';
+      cal.innerHTML = h;
+      const pv = cal.querySelector('[data-cprev]'), nx = cal.querySelector('[data-cnext]');
+      if (pv && canPrev) pv.addEventListener('click', () => { view.setMonth(view.getMonth() - 1); renderCal(); });
+      if (nx) nx.addEventListener('click', () => { view.setMonth(view.getMonth() + 1); renderCal(); });
+      cal.querySelectorAll('[data-day]').forEach((cell) => {
+        if (!cell.dataset.day) return;
+        cell.addEventListener('click', () => { data.date = cell.dataset.day; renderCal(); });
+        cell.addEventListener('mouseenter', () => { if (data.date !== cell.dataset.day) cell.style.background = '#f3e6db'; });
+        cell.addEventListener('mouseleave', () => { if (data.date !== cell.dataset.day) cell.style.background = 'transparent'; });
+      });
+    };
+    renderCal();
+
+    const panels = qa('[data-step]');
+    const showPanel = (name) => panels.forEach((p) => { p.style.display = String(p.dataset.step) === String(name) ? 'block' : 'none'; });
+
+    const updateProgress = () => {
+      qa('.pstep').forEach((ps) => {
+        const n = parseFloat(ps.dataset.dot);
+        const num = ps.querySelector('.pnum');
+        const lbl = ps.querySelector('.plbl');
+        const done = n < step, active = n === step;
+        if (active) { num.style.background = '#473824'; num.style.color = '#fff'; num.textContent = n; lbl.style.color = '#302310'; }
+        else if (done) { num.style.background = '#473824'; num.style.color = '#fff'; num.innerHTML = '<span class="ms" style="font-size:20px">check</span>'; lbl.style.color = '#302310'; }
+        else { num.style.background = '#e6d8ca'; num.style.color = '#9a8b78'; num.textContent = n; lbl.style.color = '#9a8b78'; }
+      });
+      qa('.pbar').forEach((bar) => {
+        const n = parseFloat(bar.dataset.bar);
+        bar.querySelector('.pbarfill').style.width = n < step ? '100%' : '0';
+      });
+    };
+
+    const opts = qa('.opt');
+    opts.forEach((opt) => {
+      opt.addEventListener('click', () => {
+        const group = opt.dataset.service ? 'service' : 'time';
+        opts.forEach((o) => { if ((o.dataset.service && group === 'service') || (o.dataset.time && group === 'time')) o.classList.remove('sel'); });
+        opt.classList.add('sel');
+        if (group === 'service') data.service = opt.dataset.service;
+        else data.time = opt.dataset.time;
+      });
+    });
+
+    const btnNext = q('#btnNext');
+    const btnBack = q('#btnBack');
+    const wizNav = q('#wizNav');
+
+    const validate = () => {
+      if (step === 1 && !data.service) { alert('Please choose a treatment.'); return false; }
+      if (step === 2) {
+        if (!data.date) { alert('Please pick a date.'); return false; }
+        if (!data.time) { alert('Please choose a time slot.'); return false; }
+      }
+      if (step === 3) {
+        data.name = (q('#fName').value || '').trim();
+        data.phone = (q('#fPhone').value || '').trim();
+        data.email = (q('#fEmail').value || '').trim();
+        data.notes = (q('#fNotes').value || '').trim();
+        if (!data.name || !data.phone) { alert('Please add your name and phone.'); return false; }
+      }
+      return true;
+    };
+
+    const fillSummary = () => {
+      const fmtDate = data.date ? new Date(data.date + 'T00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+      q('#sumService').textContent = data.service || '—';
+      q('#sumDate').textContent = fmtDate;
+      q('#sumTime').textContent = data.time || '—';
+      q('#sumName').textContent = data.name || '—';
+      q('#sumContact').textContent = [data.phone, data.email].filter(Boolean).join(' · ') || '—';
+    };
+
+    const render = () => {
+      showPanel(step);
+      updateProgress();
+      btnBack.style.visibility = step > 1 ? 'visible' : 'hidden';
+      btnNext.innerHTML = step === maxStep ? 'Request appointment <span class="ms" style="font-size:18px">check</span>' : 'Continue <span class="ms" style="font-size:18px">arrow_forward</span>';
+    };
+
+    // The message the guest finds already typed in WhatsApp — they only hit
+    // send. Email and notes are optional, so their lines drop out when blank.
+    const buildMessage = () => {
+      const fmtDate = data.date
+        ? new Date(data.date + 'T00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })
+        : '';
+      const lines = [
+        'Hello Lumia International Spa, I would like to request an appointment.',
+        '',
+        'Treatment: ' + data.service,
+        'Date: ' + fmtDate,
+        'Time: ' + data.time,
+        'Name: ' + data.name,
+        'Phone: ' + data.phone,
+      ];
+      if (data.email) lines.push('Email: ' + data.email);
+      if (data.notes) lines.push('Notes: ' + data.notes);
+      lines.push('', 'Please confirm this slot. Thank you.');
+      return lines.join('\n');
+    };
+
+    const whatsappUrl = () => 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(buildMessage());
+
+    btnNext.addEventListener('click', () => {
+      if (!validate()) return;
+      if (step === maxStep) {
+        const url = whatsappUrl();
+        // Show the confirmation first, with the same link as a fallback, so a
+        // guest who lands back on this tab (or whose redirect is blocked)
+        // still has a way through to the chat.
+        const fallback = q('#waFallback');
+        if (fallback) fallback.href = url;
+        showPanel('done');
+        wizNav.style.display = 'none';
+        qa('.pstep .pnum').forEach((num) => { num.style.background = '#473824'; num.style.color = '#fff'; });
+        window.location.href = url;
+        return;
+      }
+      step += 1;
+      if (step === 4) fillSummary();
+      render();
+    });
+    btnBack.addEventListener('click', () => { if (step > 1) { step -= 1; render(); } });
+
+    render();
+
+    // Deep link from the Services page: ?service=<name> preselects that
+    // treatment and drops the guest straight on Date & time.
+    const wanted = new URLSearchParams(window.location.search).get('service');
+    if (wanted) {
+      const card = qa('.svc-card').find((c) => c.dataset.service === wanted);
+      if (card) {
+        data.service = card.dataset.service;
+        qa('.svc-card').forEach((c) => c.classList.remove('sel'));
+        card.classList.add('sel');
+        svcPage = parseFloat(card.dataset.page) || 1;
+        renderSvc();
+        step = 2;
+        render();
+        requestAnimationFrame(() => bookSection.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      }
+    }
+  }
+})();
