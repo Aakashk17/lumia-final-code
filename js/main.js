@@ -65,6 +65,29 @@
       });
     }
 
+    // ── Instagram icon: app on mobile, new tab on desktop ──
+    // The profile link already opens a new tab correctly on desktop via
+    // target="_blank" — nothing to change there. On a touch device, opening
+    // that same web URL in a browser tab first often lands on Instagram's
+    // web view instead of handing off to the installed app, so the click is
+    // routed through Instagram's own URL scheme instead, falling back to the
+    // web profile only if the app isn't installed (page still visible after
+    // the fallback delay).
+    if (isTouchDevice) {
+      qa('.instagram-link').forEach((link) => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const webUrl = link.getAttribute('href');
+          const username = webUrl.replace(/^https?:\/\/(www\.)?instagram\.com\//, '').replace(/\/$/, '');
+          const fallback = setTimeout(() => {
+            if (!document.hidden) window.location.href = webUrl;
+          }, 1200);
+          window.addEventListener('pagehide', () => clearTimeout(fallback), { once: true });
+          window.location.href = 'instagram://user?username=' + encodeURIComponent(username);
+        });
+      });
+    }
+
     // ── Progressive colour reveal on scroll ──
     //
     // Per element:
