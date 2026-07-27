@@ -228,11 +228,28 @@ a:hover { color: #54442f; }
   [style*="padding:56px;"], [style*='padding:56px"'], [style*="padding: 56px;"], [style*='padding: 56px"'] { padding: 28px !important; }
   [style*="padding:36px;"], [style*='padding:36px"'], [style*="padding: 36px;"], [style*='padding: 36px"'] { padding: 24px !important; }
 
+  /* Desktop "overlap" cards tuck themselves over the neighbouring image with
+     a negative left margin. Once the grid collapses to one column there is no
+     image beside them any more, so that margin just drags the card off the
+     left edge of the screen — and because the page wrapper is overflow-x:clip,
+     the overhang is silently cut off instead of scrolling. Note the hero
+     gate seam's own margin-left:-1px is deliberately NOT matched here. */
+  [style*="margin-left:-96px"], [style*="margin-left: -96px"],
+  [style*="margin-left:-80px"], [style*="margin-left: -80px"]
+    { margin-left: 0 !important; }
+
   /* Grid layouts: collapse every multi-column inline grid to a single
      column. The calendar's own 7-day-of-week grid (repeat(7,1fr)) is
      deliberately not matched here — it must stay 7 columns at any width.
      Both colon-spacing forms are matched throughout this block for the same
-     GSAP-reformatting reason described above. */
+     GSAP-reformatting reason described above.
+
+     Every replacement uses minmax(0,1fr) rather than a bare 1fr: `1fr` is
+     shorthand for minmax(auto,1fr), so a track can never shrink below its
+     content's min-content width. A 72px stat number or a long word such as
+     "Treatments" then forces its track wider than the phone, and the
+     overflow-x:clip wrapper cuts the excess off silently. minmax(0,1fr)
+     lets the track shrink and the text wrap instead. */
   [style*="grid-template-columns:7fr 5fr"], [style*="grid-template-columns: 7fr 5fr"],
   [style*="grid-template-columns:5fr 7fr"], [style*="grid-template-columns: 5fr 7fr"],
   [style*="grid-template-columns:2fr 1fr"], [style*="grid-template-columns: 2fr 1fr"],
@@ -240,17 +257,33 @@ a:hover { color: #54442f; }
   [style*="grid-template-columns:1fr 1fr"], [style*="grid-template-columns: 1fr 1fr"],
   [style*="grid-template-columns:5fr 5fr"], [style*="grid-template-columns: 5fr 5fr"],
   [style*="grid-template-columns:352px 1fr"], [style*="grid-template-columns: 352px 1fr"]
-    { grid-template-columns: 1fr !important; }
+    { grid-template-columns: minmax(0, 1fr) !important; }
 
   /* Footer's 4-column layout: two columns at tablet width, one below 480px. */
   [style*="grid-template-columns:5fr 2fr 2fr 3fr"], [style*="grid-template-columns: 5fr 2fr 2fr 3fr"]
-    { grid-template-columns: repeat(2, 1fr) !important; }
+    { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 
-  /* 3- and 4-up feature/stat grids read better as 2 columns on a phone than
-     either a cramped row of 3-4 or a very tall single column. */
-  [style*="grid-template-columns:repeat(3,1fr)"], [style*="grid-template-columns: repeat(3,1fr)"],
-  [style*="grid-template-columns:repeat(4,1fr)"], [style*="grid-template-columns: repeat(4,1fr)"]
-    { grid-template-columns: repeat(2, 1fr) !important; }
+  /* Stats go two-up; the appointment page's 3-up time-slot grid keeps its
+     three columns (its labels are short enough to fit). */
+  [style*="grid-template-columns:repeat(4,1fr)"], [style*="grid-template-columns: repeat(4,1fr)"],
+  [style*="grid-template-columns:repeat(2,1fr)"], [style*="grid-template-columns: repeat(2,1fr)"]
+    { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  [style*="grid-template-columns:repeat(3,1fr)"], [style*="grid-template-columns: repeat(3,1fr)"]
+    { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+
+  /* The six "Why Lumia" cards carry real paragraphs, so they take a full row
+     each — at two-up their headings wrap to roughly one word per line. */
+  .why-card { grid-column: 1 / -1 !important; }
+
+  /* 72px stat figures are wider than half a phone on their own. The size is
+     set on the wrapping div, so it's overridden on the span that renders the
+     digits (which inherits it). */
+  .stat-num { font-size: 40px !important; }
+
+  /* Card padding that only makes sense at desktop widths. */
+  [style*="padding:48px 40px"], [style*="padding: 48px 40px"] { padding: 28px 24px !important; }
+  [style*="padding:40px;"], [style*='padding:40px"'],
+  [style*="padding: 40px;"], [style*='padding: 40px"'] { padding: 24px !important; }
 
   /* Fixed-height bento grids (Home's Featured Rituals, About's Sanctuary)
      must go auto-height once their columns stack, and their flex:1 children
@@ -295,10 +328,22 @@ a:hover { color: #54442f; }
 @media (max-width: 480px) {
   /* Below this width even a 2-up grid is tight for form fields and the
      footer's link columns. */
-  [style*="grid-template-columns:repeat(2,1fr)"], [style*="grid-template-columns: repeat(2,1fr)"] { grid-template-columns: 1fr !important; }
-  [style*="grid-template-columns:5fr 2fr 2fr 3fr"], [style*="grid-template-columns: 5fr 2fr 2fr 3fr"] { grid-template-columns: 1fr !important; }
+  [style*="grid-template-columns:repeat(2,1fr)"], [style*="grid-template-columns: repeat(2,1fr)"] { grid-template-columns: minmax(0, 1fr) !important; }
+  [style*="grid-template-columns:5fr 2fr 2fr 3fr"], [style*="grid-template-columns: 5fr 2fr 2fr 3fr"] { grid-template-columns: minmax(0, 1fr) !important; }
+  /* Stats too — two 40px figures side by side still crowd a 480px screen. */
+  [style*="grid-template-columns:repeat(4,1fr)"], [style*="grid-template-columns: repeat(4,1fr)"] { grid-template-columns: minmax(0, 1fr) !important; }
   /* Booking-progress step labels ("Service", "Date & time"...) crowd the
      numbered dots at this width — the dots and connecting bars still show
      the current step clearly on their own. */
   .plbl { display: none !important; }
+
+  /* Step 1's header puts the "Choose your treatment" heading and the 1/2 pager
+     in one space-between row; below ~360px they can't share a line, so the
+     pager gets pushed past the right edge. Let it wrap underneath instead. */
+  [data-step="1"] > div:first-child { flex-wrap: wrap !important; }
+
+  /* Same story for the wizard's Back / Continue pair — trim their generous
+     desktop padding so both fit, and allow wrapping as a final fallback. */
+  #wizNav { flex-wrap: wrap !important; gap: 12px !important; }
+  #btnBack, #btnNext { padding: 13px 18px !important; }
 }
