@@ -46,32 +46,52 @@
   function initCommon() {
     const qa = (s) => Array.from(document.querySelectorAll(s));
 
-    // Letter-by-letter colour reveal on scroll
+    // Progressive colour reveal on scroll.
+    //   data-reveal          -> split per character (headings, short eyebrows)
+    //   data-reveal="words"  -> split per word (body copy: a long paragraph
+    //                           would otherwise need hundreds of spans and
+    //                           hundreds of tween targets for a difference
+    //                           nobody can see once it's scrubbed)
     qa('[data-reveal]').forEach((el) => {
       if (el.dataset.split === '1') return;
+      // Splitting replaces the element's contents wholesale, which would throw
+      // away any nested markup (<br>, <em>, an icon <span>, a link). Only ever
+      // split elements whose content is plain text.
+      if (el.children.length) return;
       el.dataset.split = '1';
+
       const startC = el.dataset.start || '#dac3a7';
       const finalC = el.dataset.final || '#302310';
+      const byWord = el.dataset.reveal === 'words';
       const txt = el.textContent;
       el.textContent = '';
+
+      // Keep whitespace as its own un-animated node so words can wrap normally.
+      const pieces = byWord ? txt.split(/(\s+)/) : Array.from(txt);
       const spans = [];
-      for (const ch of txt) {
+      for (const piece of pieces) {
+        if (!piece) continue;
+        if (/^\s+$/.test(piece)) { el.appendChild(document.createTextNode(piece)); continue; }
         const s = document.createElement('span');
-        s.textContent = ch;
+        s.textContent = piece;
         s.style.color = startC;
-        if (ch === ' ') s.style.whiteSpace = 'pre';
+        if (piece === ' ') s.style.whiteSpace = 'pre';
         el.appendChild(s);
         spans.push(s);
       }
+      if (!spans.length) return;
+
       const isHero = el.tagName === 'H1';
       gsap.to(spans, {
         color: finalC,
         ease: 'none',
-        stagger: 0.4,
+        // Total stagger is normalised so short and long text sweep across their
+        // scroll range at the same pace instead of long copy finishing early.
+        stagger: { each: 0.4, from: 'start' },
         scrollTrigger: {
           trigger: el,
-          start: isHero ? 'top 92%' : 'top 84%',
-          end: isHero ? 'top 45%' : 'top 42%',
+          start: isHero ? 'top 92%' : 'top 88%',
+          end: isHero ? 'top 45%' : 'top 45%',
           scrub: 0.9,
           invalidateOnRefresh: true,
         },
