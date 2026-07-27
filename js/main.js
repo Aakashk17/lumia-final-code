@@ -46,6 +46,25 @@
   function initCommon() {
     const qa = (s) => Array.from(document.querySelectorAll(s));
 
+    // ── Footer email links ──
+    // The phone and WhatsApp links need no help: `tel:` opens the dialer with
+    // the number filled in, and wa.me opens the WhatsApp app or WhatsApp Web,
+    // both correct on their own. Mail is the exception — on a phone `mailto:`
+    // opens the mail app, but on a desktop with no mail client registered the
+    // click silently does nothing. So desktop clicks go to Gmail's web compose
+    // instead (the spa's address is a Gmail one); touch devices keep `mailto:`.
+    const isTouchDevice = window.matchMedia('(hover: none), (pointer: coarse)').matches;
+    if (!isTouchDevice) {
+      qa('.mail-link').forEach((link) => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const to = link.getAttribute('href').replace(/^mailto:/, '');
+          const compose = 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(to);
+          window.open(compose, '_blank', 'noopener');
+        });
+      });
+    }
+
     // ── Progressive colour reveal on scroll ──
     //
     // Per element:
@@ -456,8 +475,8 @@
   // Appointment (appointment.html) — guarded on the booking wizard section
   // ────────────────────────────────────────────────────────────────────────
   // This is the ONLY place the spa's WhatsApp number appears — change it here
-  // and the whole booking handoff follows. Currently a placeholder.
-  const WHATSAPP_NUMBER = '919876543210';
+  // and the whole booking handoff follows.
+  const WHATSAPP_NUMBER = '919019663937';
 
   function initAppointmentPage() {
     const bookSection = document.getElementById('book');

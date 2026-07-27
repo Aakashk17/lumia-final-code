@@ -24,10 +24,10 @@ in each page's `<head>`/before `</body>` — nothing to install or update.
 
 ## Before going live
 
-`js/main.js` has one placeholder that must be set to the real number:
+`js/main.js` holds the spa's WhatsApp number:
 
 ```js
-const WHATSAPP_NUMBER = '919876543210';
+const WHATSAPP_NUMBER = '919019663937';
 ```
 
 This is the number the "Request appointment" button on the booking page sends
