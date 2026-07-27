@@ -46,13 +46,26 @@
   function initCommon() {
     const qa = (s) => Array.from(document.querySelectorAll(s));
 
-    // Progressive colour reveal on scroll.
+    // ── Progressive colour reveal on scroll ──
+    //
+    // Per element:
     //   data-reveal          -> split per character (headings, short eyebrows)
     //   data-reveal="words"  -> split per word (body copy: a long paragraph
     //                           would otherwise need hundreds of spans and
     //                           hundreds of tween targets for a difference
     //                           nobody can see once it's scrubbed)
-    qa('[data-reveal]').forEach((el) => {
+    //
+    // Grouping: a block of copy must read as ONE continuous sweep, from the
+    // first letter of its eyebrow to the last full stop of its final
+    // paragraph. Giving every element its own ScrollTrigger made the eyebrow,
+    // the heading and each paragraph all start colouring at the same moment,
+    // independently. So elements are collected into runs, and each run gets a
+    // single tween + a single ScrollTrigger keyed to the run's container:
+    //   * data-reveal-group="name" -> forces those elements into one run no
+    //     matter how deeply they sit (used where items are nested in wrappers)
+    //   * otherwise elements are grouped by their shared parent element
+    //   * <h1> always stays on its own — hero headings need their own range
+    const splitEl = (el, out) => {
       if (el.dataset.split === '1') return;
       // Splitting replaces the element's contents wholesale, which would throw
       // away any nested markup (<br>, <em>, an icon <span>, a link). Only ever
@@ -68,30 +81,64 @@
 
       // Keep whitespace as its own un-animated node so words can wrap normally.
       const pieces = byWord ? txt.split(/(\s+)/) : Array.from(txt);
-      const spans = [];
       for (const piece of pieces) {
         if (!piece) continue;
         if (/^\s+$/.test(piece)) { el.appendChild(document.createTextNode(piece)); continue; }
         const s = document.createElement('span');
         s.textContent = piece;
         s.style.color = startC;
+        // Each span carries its own destination colour, so one tween can drive
+        // a whole run whose eyebrow, heading and body copy all land on
+        // different colours.
+        s.dataset.fc = finalC;
         if (piece === ' ') s.style.whiteSpace = 'pre';
         el.appendChild(s);
-        spans.push(s);
+        out.push(s);
       }
-      if (!spans.length) return;
+    };
 
-      const isHero = el.tagName === 'H1';
+    // Nearest element that contains every member of the run.
+    const commonAncestor = (els) => {
+      let a = els[0];
+      for (let i = 1; i < els.length; i++) {
+        while (a && !a.contains(els[i])) a = a.parentElement;
+      }
+      return a || document.body;
+    };
+
+    const runs = [];                 // { els: [], trigger: el, hero: bool }
+    const byParent = new Map();
+    const byName = new Map();
+    qa('[data-reveal]').forEach((el) => {
+      if (el.tagName === 'H1') { runs.push({ els: [el], trigger: el, hero: true }); return; }
+      const name = el.dataset.revealGroup;
+      if (name) {
+        if (!byName.has(name)) byName.set(name, []);
+        byName.get(name).push(el);
+        return;
+      }
+      const p = el.parentElement || document.body;
+      if (!byParent.has(p)) byParent.set(p, []);
+      byParent.get(p).push(el);
+    });
+    byName.forEach((els) => runs.push({ els, trigger: commonAncestor(els), hero: false }));
+    byParent.forEach((els, parent) => runs.push({ els, trigger: parent, hero: false }));
+
+    runs.forEach((run) => {
+      const spans = [];
+      run.els.forEach((el) => splitEl(el, spans));
+      if (!spans.length) return;
       gsap.to(spans, {
-        color: finalC,
+        color: (i, t) => t.dataset.fc,
         ease: 'none',
-        // Total stagger is normalised so short and long text sweep across their
-        // scroll range at the same pace instead of long copy finishing early.
         stagger: { each: 0.4, from: 'start' },
         scrollTrigger: {
-          trigger: el,
-          start: isHero ? 'top 92%' : 'top 88%',
-          end: isHero ? 'top 45%' : 'top 45%',
+          trigger: run.trigger,
+          start: run.hero ? 'top 92%' : 'top 85%',
+          // "center center" = fully coloured by the time the block's midpoint
+          // reaches the middle of the screen, so a section is never still
+          // filling in once you're past half of it.
+          end: run.hero ? 'top 45%' : 'center center',
           scrub: 0.9,
           invalidateOnRefresh: true,
         },
