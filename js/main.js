@@ -239,8 +239,9 @@
 
     const SLIDE_MIN = 300;
     const SLIDE_MAX = 380;
-    const HOLD = 3800;
-    const RESUME_AFTER = 7000;
+    const HOLD = 2400;          // ms each card stays centred before advancing
+    const RESUME_AFTER = 6000;  // ms of stillness before autoplay resumes
+    const SETTLE_MS = 140;      // quiet period that means "scrolling has stopped"
 
     // True infinite loop: duplicate the whole set before and after the real
     // slides. Autoplay only ever drifts through the middle (real) copy; the
@@ -261,7 +262,13 @@
     track.appendChild(frag);
     const slides = Array.from(track.querySelectorAll('.mslide'));
 
-    let idle = null, timer = null, raf = null, current = N, groupShift = 0, correcting = false;
+    // `target` is the slide autoplay INTENDS to have centred. It is deliberately
+    // kept separate from whichever slide currently happens to be nearest the
+    // centre: during a smooth scroll the nearest slide sweeps through several
+    // values, and advancing from that moving figure made autoplay skip cards or
+    // stall. Only goTo() and the settle handler ever write to it.
+    let idle = null, timer = null, raf = null, settleTimer = null;
+    let target = N, groupShift = 0;
 
     const layout = () => {
       const w = Math.max(SLIDE_MIN, Math.min(SLIDE_MAX, track.clientWidth - 48));
@@ -272,44 +279,80 @@
       groupShift = (slides[N] && slides[0]) ? slides[N].offsetLeft - slides[0].offsetLeft : 0;
     };
 
+    // Index of whichever slide currently sits nearest the centre of the track.
+    const centreIndex = () => {
+      const centre = track.scrollLeft + track.clientWidth / 2;
+      let best = target, bestDist = Infinity;
+      slides.forEach((s, i) => {
+        const d = Math.abs(s.offsetLeft + s.offsetWidth / 2 - centre);
+        if (d < bestDist) { bestDist = d; best = i; }
+      });
+      return best;
+    };
+
+    // Purely visual: scale/fade each card by its distance from the centre and
+    // mark the centre one. Never touches `target` or scrollLeft, so it is safe
+    // to run on every frame of an in-flight smooth scroll.
     const paint = () => {
       raf = null;
       const centre = track.scrollLeft + track.clientWidth / 2;
       const w = slides[0].offsetWidth || 1;
-      let best = current, bestDist = Infinity;
+      const best = centreIndex();
       slides.forEach((s, i) => {
         const sc = s.offsetLeft + s.offsetWidth / 2;
         const t = Math.min(1, Math.abs(sc - centre) / (w * 1.5));
         const card = s.firstElementChild;
         card.style.setProperty('--s', (1 - 0.16 * t).toFixed(3));
         card.style.setProperty('--o', (1 - 0.45 * t).toFixed(3));
-        if (Math.abs(sc - centre) < bestDist) { bestDist = Math.abs(sc - centre); best = i; }
+        s.classList.toggle('is-centre', i === best);
       });
-      slides.forEach((s, i) => s.classList.toggle('is-centre', i === best));
-      current = best;
       if (dotsWrap) {
-        const logical = ((current % N) + N) % N;
+        const logical = ((best % N) + N) % N;
         Array.from(dotsWrap.children).forEach((d, i) => d.classList.toggle('on', i === logical));
-      }
-      if (!correcting && groupShift) {
-        if (current < N) { correcting = true; track.scrollLeft += groupShift; current += N; correcting = false; }
-        else if (current >= 2 * N) { correcting = true; track.scrollLeft -= groupShift; current -= N; correcting = false; }
       }
     };
 
     const schedulePaint = () => { if (raf == null) raf = requestAnimationFrame(paint); };
 
     const goTo = (i, smooth) => {
+      // Safety clamp back into the tripled array, mapped into the middle copy.
+      // Normally onSettled keeps `target` within [N, 2N-1] so i never exceeds
+      // 2N, but if scroll events are ever missed the index would otherwise
+      // march past the last slide, hit undefined and silently kill autoplay.
       if (i < 0 || i >= slides.length) i = N + (((i - N) % N) + N) % N;
       const s = slides[i];
       if (!s) return;
+      target = i;
       track.scrollTo({
         left: s.offsetLeft + s.offsetWidth / 2 - track.clientWidth / 2,
         behavior: smooth === false ? 'auto' : 'smooth',
       });
     };
 
-    const play = () => { stop(); timer = setInterval(() => goTo(current + 1), HOLD); };
+    // Runs once scrolling has actually stopped. Doing the group shift here
+    // rather than mid-scroll is what keeps the wrap invisible: rewriting
+    // scrollLeft while a smooth scroll is still animating fights that
+    // animation and shows up as a stutter at the loop boundary.
+    const onSettled = () => {
+      settleTimer = null;
+      const c = centreIndex();
+      if (groupShift && (c < N || c >= 2 * N)) {
+        const forward = c < N;
+        track.scrollLeft += forward ? groupShift : -groupShift;
+        target = forward ? c + N : c - N;
+        paint();
+      } else {
+        target = c;
+      }
+    };
+
+    const onScroll = () => {
+      schedulePaint();
+      if (settleTimer) clearTimeout(settleTimer);
+      settleTimer = setTimeout(onSettled, SETTLE_MS);
+    };
+
+    const play = () => { stop(); timer = setInterval(() => goTo(target + 1), HOLD); };
     const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
     const pause = () => { stop(); if (idle) clearTimeout(idle); idle = setTimeout(play, RESUME_AFTER); };
 
@@ -324,11 +367,11 @@
       });
     }
 
-    track.addEventListener('scroll', schedulePaint, { passive: true });
+    track.addEventListener('scroll', onScroll, { passive: true });
     ['mouseenter', 'pointerdown', 'touchstart', 'wheel', 'keydown'].forEach((ev) =>
       track.addEventListener(ev, pause, { passive: true }));
     track.addEventListener('mouseleave', pause, { passive: true });
-    window.addEventListener('resize', () => { layout(); goTo(current, false); schedulePaint(); });
+    window.addEventListener('resize', () => { layout(); goTo(target, false); schedulePaint(); });
 
     if (window.IntersectionObserver) {
       new IntersectionObserver((es) => {
@@ -339,7 +382,7 @@
     layout();
     goTo(N, false);
     paint();
-    window.addEventListener('load', () => { layout(); goTo(current, false); schedulePaint(); });
+    window.addEventListener('load', () => { layout(); goTo(target, false); schedulePaint(); });
   }
 
   // ────────────────────────────────────────────────────────────────────────
@@ -366,7 +409,11 @@
     const qa = (s) => Array.from(document.querySelectorAll(s));
     const data = { service: '', date: '', time: '', name: '', phone: '', email: '', notes: '' };
     let step = 1;
-    const maxStep = 4;
+    // Three steps: Service -> Date & time -> Your details. The last step's
+    // button is "Request appointment", which hands straight off to WhatsApp;
+    // there's no separate review screen because the pre-filled WhatsApp
+    // message itself is the review.
+    const maxStep = 3;
 
     // Service pagination (4 per page)
     let svcPage = 1; const svcPages = 2;
@@ -479,15 +526,6 @@
       return true;
     };
 
-    const fillSummary = () => {
-      const fmtDate = data.date ? new Date(data.date + 'T00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' }) : '—';
-      q('#sumService').textContent = data.service || '—';
-      q('#sumDate').textContent = fmtDate;
-      q('#sumTime').textContent = data.time || '—';
-      q('#sumName').textContent = data.name || '—';
-      q('#sumContact').textContent = [data.phone, data.email].filter(Boolean).join(' · ') || '—';
-    };
-
     const render = () => {
       showPanel(step);
       updateProgress();
@@ -534,7 +572,6 @@
         return;
       }
       step += 1;
-      if (step === 4) fillSummary();
       render();
     });
     btnBack.addEventListener('click', () => { if (step > 1) { step -= 1; render(); } });
