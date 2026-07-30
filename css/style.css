@@ -323,6 +323,35 @@ a:hover { color: #54442f; }
      narrow screens — hidden rather than repositioned. */
   .hero-float { display: none !important; }
 
+  /* Home hero art direction. #heroBg is a logo lockup drawn with
+     `background-size:contain`, so the art's own aspect ratio decides how much
+     of the hero it can fill — cropping is not an option, it would cut the
+     wordmark. The 16:9 lockup fills a wide viewport but collapses to a thin
+     band once the viewport turns portrait, so below this breakpoint we swap in
+     the 5:4 crop of the same artwork, which renders ~40% taller in the same
+     width. The blurred ambient layer behind it is ratio-agnostic (it uses
+     `cover`), so it keeps padding the frame either way.
+     !important because the URL is set in the element's inline style.
+     The attribute filter matters: appointment.html reuses the id #heroBg for a
+     full-bleed `cover` photo, which must NOT be swapped — only the `contain`
+     lockup on Home is aspect-sensitive. */
+  #heroBg[style*="contain"] {
+    background-image: url('../assets/img/hero-lumia-logo-portrait.jpg') !important;
+    /* The taller art now reaches down into the band where #heroTitle sits
+       (it is centred, then pushed 12vh lower), so the wordmark and the
+       headline overlap. Seating the art in the upper third clears the
+       headline without cropping any of it. */
+    background-position: center 32% !important;
+  }
+
+  /* The two full-bleed `cover` heroes (About, Book) are 3:2 landscape photos
+     shown in a portrait viewport, so ~60% of their width is cropped away. Both
+     compositions put the guest right of centre, which a default `center` crop
+     cuts out entirely — leaving an anonymous shot of an empty tub. Pulling the
+     focal point right keeps her in frame; the headline sits over the darker
+     left side of what remains, so legibility is unaffected. */
+  #aboutBg, #heroBg[style*="cover"] { background-position: 82% center !important; }
+
   /* Gallery marquee cards are intentionally oversized/cropped on desktop;
      scaled down so more than a sliver of each card shows on a phone. */
   [style*="flex:0 0 520px;"], [style*="flex: 0 0 520px;"] { flex: 0 0 280px !important; }
