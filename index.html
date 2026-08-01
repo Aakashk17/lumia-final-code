@@ -5,11 +5,76 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lumia International Spa | HSR Layout, Bengaluru</title>
 <meta name="description" content="A world-class spa and wellness experience in the heart of HSR Layout, Bengaluru — jacuzzi hydrotherapy, Moroccan bath, massage and more.">
+
+<!-- Extension-less: Cloudflare Pages 308-redirects /index.html to /, so the
+     canonical has to name where a visitor actually lands, not the file. -->
+<link rel="canonical" href="https://lumiainternationalspa.com/">
+<meta name="theme-color" content="#302310">
+
+<!-- Link previews. These URLs are absolute because they are fetched by
+     WhatsApp's and Facebook's servers, which have no page to resolve a
+     relative path against. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Lumia International Spa">
+<meta property="og:locale" content="en_IN">
+<meta property="og:title" content="Lumia International Spa | HSR Layout, Bengaluru">
+<meta property="og:description" content="A world-class spa and wellness experience in the heart of HSR Layout, Bengaluru — jacuzzi hydrotherapy, Moroccan bath, massage and more.">
+<meta property="og:url" content="https://lumiainternationalspa.com/">
+<meta property="og:image" content="https://lumiainternationalspa.com/assets/img/og-cover.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The Lumia International Spa logo in gold, lit by candlelight">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
+
+<!-- Local-business record for Google. Only facts that appear on the site are
+     listed here — there is no streetAddress or postalCode because the site
+     never states one; add them here and to the footer together, or Google
+     will see the two sources disagree. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "DaySpa",
+  "@id": "https://lumiainternationalspa.com/#spa",
+  "name": "Lumia International Spa",
+  "url": "https://lumiainternationalspa.com/",
+  "image": "https://lumiainternationalspa.com/assets/img/og-cover.jpg",
+  "description": "A world-class spa and wellness experience in the heart of HSR Layout, Bengaluru — jacuzzi hydrotherapy, Moroccan bath, massage and more.",
+  "telephone": "+91-90196-63937",
+  "email": "lumiainternationalspa@gmail.com",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "HSR Layout",
+    "addressRegion": "Karnataka",
+    "addressCountry": "IN"
+  },
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": 12.911947,
+    "longitude": 77.649429
+  },
+  "hasMap": "https://www.google.com/maps/search/?api=1&query=12.911947%2C77.649429",
+  "openingHoursSpecification": [{
+    "@type": "OpeningHoursSpecification",
+    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+    "opens": "10:00",
+    "closes": "21:00"
+  }],
+  "sameAs": [
+    "https://www.instagram.com/lumiainternationalspa/",
+    "https://www.facebook.com/profile.php?id=61592450436776"
+  ]
+}
+</script>
 </head>
 <body>
 <div style="font-family:'Comfortaa',sans-serif;background:#fff8f4;color:#211a14;overflow-x:clip;position:relative;">
@@ -46,9 +111,7 @@
          runtime — it only exists to pad the frame with the artwork's own colours at
          viewport ratios where the crisp layer below cannot reach the edges. -->
     <div aria-hidden="true" style="position:absolute;inset:0;z-index:0;background-image:url('assets/img/hero-lumia-ambient.jpg');background-size:cover;background-position:center;"></div>
-    <!-- `contain`, not `cover`: this artwork is a logo lockup, so cropping it would cut
-         the wordmark. The art is 16:9, so on a 16:9 display it fills the hero anyway. -->
-    <div id="heroBg" style="position:absolute;inset:0;z-index:0;background-image:url('assets/img/hero-lumia-logo.jpg');background-repeat:no-repeat;background-size:contain;background-position:center;will-change:transform;"></div>
+    <div id="heroBg" style="position:absolute;inset:0;z-index:0;background-image:url('assets/img/hero-lumia-logo.jpg');background-repeat:no-repeat;background-size:cover;background-position:center;will-change:transform;"></div>
     <div style="position:absolute;inset:0;z-index:1;background:linear-gradient(to bottom,rgba(37,25,8,.35),rgba(37,25,8,.15) 40%,rgba(255,248,244,.05) 78%,#fff8f4);"></div>
 
     <div id="heroCards" style="position:absolute;inset:0;z-index:3;pointer-events:none;">

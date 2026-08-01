@@ -1,0 +1,14 @@
+<!-- Lumia monogram. The full logo is a fine-line emblem — at 16px its linework
+     turns to mush, so the favicon carries just the wordmark's "L": the same
+     rounded terminals, in the same gold, on the brand's deep brown. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Lumia International Spa">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EDD2A0"/>
+      <stop offset="1" stop-color="#BC8E4C"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#302310"/>
+  <path d="M23 17 V 45 H 44" fill="none" stroke="url(#gold)" stroke-width="6.5"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

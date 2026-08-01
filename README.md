@@ -35,6 +35,36 @@ guests to on WhatsApp, with their booking details pre-filled in the message.
 
 ## Deploying
 
-Any static host works — Cloudflare Pages, Netlify, GitHub Pages, or a plain
-web server. Point it at this folder's root (`index.html` is the homepage) with
-no build command.
+Live on **Cloudflare Pages** at https://lumiainternationalspa.com, built from
+this repo's `master` branch — push and it redeploys, no build command. The
+GitHub Pages workflow in `.github/workflows/deploy.yml` still runs in parallel
+and publishes the same commit to the `github.io` URL.
+
+One difference between the two hosts: Cloudflare Pages 308-redirects
+`/services.html` to `/services`, GitHub Pages does not. The internal links stay
+written as `services.html` so both hosts work; on Cloudflare that costs one
+redirect per navigation. The `<link rel="canonical">` tags and `sitemap.xml`
+use the extension-less form, which is what Cloudflare actually serves — so
+Google indexes the Cloudflare copy and treats the GitHub Pages one as a
+duplicate of it.
+
+### Files that only matter to the host
+
+```
+_headers        Cloudflare-only: security headers + cache lifetimes. Ignored elsewhere.
+robots.txt      Points crawlers at the sitemap.
+sitemap.xml     The four pages. Update <lastmod> when content changes materially.
+favicon.svg     The one source for the icon; the PNGs below are rendered from it.
+favicon-32.png  Fallback for browsers without SVG icon support.
+apple-touch-icon.png   iOS home-screen icon (180x180).
+assets/img/og-cover.jpg  1200x630 link preview, shown when the site is shared on WhatsApp.
+```
+
+Photos are **not** content-hashed, so `_headers` gives browsers a one-day
+cache and Cloudflare's edge a long one (the edge is purged on every deploy).
+To force an instant refresh of a changed photo, rename the file.
+
+The `DaySpa` record in `index.html`'s `<head>` is what Google reads for local
+search. It deliberately carries no `streetAddress` or `postalCode`, because the
+site itself never states one — if you add an address to the footer, add it
+there too, or the two sources will disagree.

@@ -1,0 +1,30 @@
+# Cloudflare Pages reads this file at deploy time and applies the rules below to
+# matching responses. It is config, not a served asset — Pages strips it from the
+# published output. Other static hosts ignore it, so the GitHub Pages copy of
+# this site simply runs without these headers.
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=()
+  # Scripts need no 'unsafe-inline': every <script> on the site is a src= to
+  # self or cdnjs. Styles do — the pages carry their layout in style="..."
+  # attributes, which is exactly what 'unsafe-inline' governs.
+  # frame-src is for the embedded Google Map on the home and booking pages;
+  # the maps.google.com embed URL redirects to www.google.com, so both are listed.
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; frame-src https://maps.google.com https://www.google.com; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; object-src 'none'
+
+# Photos are not content-hashed — `hero-lumia-logo.jpg` keeps its name when the
+# picture behind it changes. So the browser gets a short lease and Cloudflare's
+# edge gets a long one: the edge copy is purged automatically on every deploy,
+# while a year-long browser cache would strand returning visitors on the old
+# photo with no way to bust it. To force an instant refresh, rename the file.
+/assets/*
+  Cache-Control: public, max-age=86400, s-maxage=31536000
+
+/css/*
+  Cache-Control: public, max-age=3600, s-maxage=31536000
+
+/js/*
+  Cache-Control: public, max-age=3600, s-maxage=31536000
