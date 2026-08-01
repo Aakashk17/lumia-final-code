@@ -240,15 +240,36 @@
     // its pinSpacing inserts ~130vh into the document, so every trigger below
     // it must measure the page only after this one has laid the spacer out.
     gsap.set('#heroTitle', { scale: 1.06 });
+
+    // The hero text fades as a function of how far the PANELS have travelled,
+    // not of raw scroll: the panels run on power3.inOut, so a plain ease on the
+    // text would drift out of step with them. gateFade re-derives panel travel
+    // from tween progress, then reads the opacity off a curve keyed to it —
+    // 1.00 shut, 0.54 half-open, 0.08 at 90%, 0 exactly as the gate lands.
+    const OPACITY_AT_GATE = [1, 0.95, 0.88, 0.78, 0.66, 0.54, 0.42, 0.30, 0.18, 0.08, 0];
+    const gateFade = (p) => {
+      // power3.inOut, the panels' own ease → fraction of the gate that is open.
+      // GSAP's power3 is quartic (power1 = quad, power2 = cubic, power3 = quart).
+      const open = p < 0.5 ? 8 * p * p * p * p : 1 - 8 * Math.pow(1 - p, 4);
+      // linear interpolation between the 10%-apart control points above
+      const i = Math.min(OPACITY_AT_GATE.length - 2, Math.floor(open * 10));
+      const seg = open * 10 - i;
+      const opacity = OPACITY_AT_GATE[i] + (OPACITY_AT_GATE[i + 1] - OPACITY_AT_GATE[i]) * seg;
+      return 1 - opacity; // GSAP wants tween progress, and the tween ends at 0
+    };
+
     const gateTl = gsap.timeline({
       scrollTrigger: { trigger: '#top', start: 'top top', end: '+=130%', scrub: 0.6, pin: true, pinSpacing: true, anticipatePin: 1, refreshPriority: 10 },
     });
     gateTl
-      .to('.gate-only', { opacity: 0, y: -12, ease: 'power2.out' }, 0.05)
-      .to('#gateSeam', { opacity: 0, ease: 'power2.out' }, 0.05)
+      // "Scroll to enter", the spa rule and the headline share one curve and one
+      // span, so they dissolve together in lockstep with the opening panels.
+      .to('.gate-only', { opacity: 0, filter: 'blur(8px)', y: -12, duration: 0.5, ease: gateFade }, 0)
+      .to('#gateSeam', { opacity: 0, duration: 0.5, ease: gateFade }, 0)
       .to('#gateL', { xPercent: -100, ease: 'power3.inOut' }, 0)
       .to('#gateR', { xPercent: 100, ease: 'power3.inOut' }, 0)
-      .to('#heroTitle', { scale: 1, ease: 'power3.inOut' }, 0);
+      .to('#heroTitle', { scale: 1, ease: 'power3.inOut' }, 0)
+      .to('#heroTitle', { opacity: 0, filter: 'blur(8px)', y: -18, duration: 0.5, ease: gateFade }, 0);
 
     // Mouse-follow parallax on floating hero cards (no-op on touch devices —
     // mousemove simply never fires, and the cards are hidden on narrow
