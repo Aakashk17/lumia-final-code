@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Page not found — Lumia International Spa</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#302310">
+
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<!-- Every path here is root-absolute, not relative like the other pages. This
+     page is served *in place of* whatever URL was missing, so from a request
+     for /a/b/c a relative "index.html" would resolve to /a/b/index.html and
+     miss again. Styles are inline for the same reason: nothing here may depend
+     on a second request succeeding.
+
+     The trade-off is the GitHub Pages copy, which lives under a /lumia-final-code
+     subpath — these links point at the github.io root there. Production is the
+     domain, so production wins. -->
+<style>
+  body { margin: 0; font-family: 'Comfortaa', sans-serif; background: #fff8f4; color: #211a14; }
+  .wrap { min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+          justify-content: center; text-align: center; padding: 48px 24px; box-sizing: border-box; }
+  .mark { display: flex; flex-direction: column; line-height: 1; margin-bottom: 64px; text-decoration: none; }
+  .mark b { font-size: 24px; font-weight: 500; color: #302310; letter-spacing: -.01em; }
+  .mark span { font-size: 10px; color: #4d463d; letter-spacing: .28em; text-transform: uppercase; margin-top: 3px; }
+  .code { font-size: 13px; font-weight: 500; letter-spacing: .28em; text-transform: uppercase;
+          color: #a08f77; margin: 0 0 20px; }
+  h1 { font-size: 42px; font-weight: 300; line-height: 1.2; color: #302310; margin: 0 0 20px; }
+  p { font-size: 16px; font-weight: 300; line-height: 1.7; color: #4d463d; max-width: 30em; margin: 0 auto 40px; }
+  .btns { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+  .btn { font-size: 14px; font-weight: 500; letter-spacing: .08em; padding: 15px 34px;
+         border-radius: 9999px; text-decoration: none; display: inline-block;
+         transition: transform .3s ease, box-shadow .3s ease; }
+  .fill { background: #473824; color: #fff8f4; }
+  .ghost { border: 1px solid #cfc3b3; color: #302310; }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(48,35,16,.16); }
+  .tel { margin-top: 48px; font-size: 14px; font-weight: 300; color: #4d463d; }
+  .tel a { color: #302310; text-decoration: none; border-bottom: 1px solid rgba(48,35,16,.3); padding-bottom: 2px; }
+  @media (max-width: 640px) {
+    h1 { font-size: 30px; }
+    .mark { margin-bottom: 44px; }
+    .btns { flex-direction: column; align-items: stretch; width: 100%; max-width: 320px; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="mark" href="/index.html">
+      <b>Lumia</b>
+      <span>International Spa</span>
+    </a>
+
+    <p class="code">Error 404</p>
+    <h1>We couldn&rsquo;t find that page</h1>
+    <p>The link may have changed, or been mistyped. Everything else is right where
+       you left it &mdash; start again from the beginning, or go straight to booking.</p>
+
+    <div class="btns">
+      <a class="btn fill" href="/index.html">Return home</a>
+      <a class="btn ghost" href="/appointment.html#book">Book an appointment</a>
+    </div>
+
+    <p class="tel">Rather just talk to us? <a href="tel:+919019663937">+91 90196 63937</a></p>
+  </div>
+</body>
+</html>
