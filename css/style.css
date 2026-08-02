@@ -65,10 +65,83 @@ a:hover { color: #54442f; }
 /* width:max-content stops the flex row shrinking to the viewport, so the two
    groups keep their true width and -50% lands exactly one group along. */
 .marquee-track { display: flex; width: max-content; will-change: transform; animation: lumia-marquee 72s linear infinite; }
-.marquee-group { display: flex; gap: 24px; padding-right: 24px; }
+/* `flex: 0 0 auto` + `min-width: max-content` is the Safari fix. Safari lets a
+   flex item shrink below its content width even inside a `width:max-content`
+   flex container (Chrome and Firefox do not), so each group was squeezed
+   narrower than the cards it holds — and since the cards themselves cannot
+   shrink, they spilled out and overlapped the neighbouring group. Both
+   declarations together pin every group to its true width in every browser. */
+.marquee-group { display: flex; gap: 24px; padding-right: 24px; flex: 0 0 auto; min-width: max-content; }
+/* The card widths live here rather than in a `flex:0 0 520px` inline style for
+   the same reason: an explicit width is resolved identically everywhere, a
+   flex-basis inside a max-content parent is not. */
+.gal-card { flex: 0 0 auto; }
+.gal-wide { width: 520px; }
+.gal-narrow { width: 360px; }
 .marquee:hover .marquee-track { animation-play-state: paused; }
 @keyframes lumia-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; } }
+
+/* ── Floating WhatsApp button (home, services, about) ──
+   The wiggle sits on the icon, not on the button, so the button's own
+   transform stays free for the hover scale — an animation on the same
+   property would otherwise beat the :hover rule and the lift would never
+   show. Two expanding rings run 1.3s out of phase for a continuous
+   "tap me" pulse behind the badge. */
+.wa-fab {
+  position: fixed; right: 26px; bottom: 26px; z-index: 200;
+  width: 60px; height: 60px; border-radius: 9999px;
+  display: flex; align-items: center; justify-content: center;
+  background: #25d366; color: #fff;
+  box-shadow: 0 14px 30px -10px rgba(37,211,102,.6), 0 4px 12px rgba(0,0,0,.18);
+  transition: transform .5s cubic-bezier(.16,1,.3,1), opacity .4s ease, box-shadow .4s ease, background-color .3s ease;
+}
+.wa-fab:hover, .wa-fab:focus-visible {
+  color: #fff; background: #1eb85a; transform: scale(1.1);
+  box-shadow: 0 20px 40px -10px rgba(37,211,102,.75), 0 6px 16px rgba(0,0,0,.22);
+}
+/* Home only: main.js adds .wa-fab-gated on load and .is-in once the keyhole
+   has opened. Stated as :not(.is-in) rather than as a pair of states so the
+   revealed badge carries no overriding declaration of its own — it simply
+   falls back to the rules above, hover transform included. */
+.wa-fab-gated:not(.is-in) {
+  opacity: 0;
+  transform: translateY(28px) scale(.6);
+  pointer-events: none;
+}
+.wa-fab:active { transform: scale(.96); }
+.wa-fab-ic { position: relative; z-index: 1; animation: wa-nudge 4s ease-in-out 1.5s infinite; }
+.wa-fab:hover .wa-fab-ic { animation: none; }
+.wa-fab-ring {
+  position: absolute; inset: 0; border-radius: 9999px; background: #25d366;
+  animation: wa-pulse 2.8s cubic-bezier(.16,1,.3,1) infinite;
+}
+.wa-fab-ring-2 { animation-delay: 1.4s; }
+.wa-fab-label {
+  position: absolute; right: 74px; white-space: nowrap;
+  background: #302310; color: #fff8f4;
+  font-size: 13px; font-weight: 500; letter-spacing: .04em;
+  padding: 9px 16px; border-radius: 9999px;
+  opacity: 0; transform: translateX(10px); pointer-events: none;
+  box-shadow: 0 12px 26px -14px rgba(0,0,0,.6);
+  transition: opacity .35s ease, transform .35s cubic-bezier(.16,1,.3,1);
+}
+.wa-fab:hover .wa-fab-label, .wa-fab:focus-visible .wa-fab-label { opacity: 1; transform: translateX(0); }
+@keyframes wa-pulse {
+  0%   { transform: scale(1);   opacity: .5; }
+  70%  { transform: scale(1.9); opacity: 0; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+@keyframes wa-nudge {
+  0%, 82%, 100% { transform: rotate(0) scale(1); }
+  86% { transform: rotate(-12deg) scale(1.12); }
+  90% { transform: rotate(10deg) scale(1.12); }
+  94% { transform: rotate(-6deg) scale(1.06); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wa-fab-ic { animation: none; }
+  .wa-fab-ring { display: none; }
+}
 
 /* ── Services: coverflow "The Menu" carousel ── */
 .caro { scrollbar-width: none; -ms-overflow-style: none; }
@@ -110,6 +183,16 @@ a:hover { color: #54442f; }
   color: #fff !important;
   font-weight: 500;
 }
+/* A time slot that has already started today. main.js adds the class; these
+   rules also have to cancel .opt's hover lift, or a dead slot still animates
+   under the cursor as though it could be picked. */
+.opt.is-past {
+  opacity: .45;
+  cursor: not-allowed;
+  text-decoration: line-through;
+  background: #f3ece4;
+}
+.opt.is-past:hover { transform: none; box-shadow: none; }
 /* Service cards keep their photo, so they get a ring rather than a fill. */
 .opt.svc-card.sel {
   border-color: #473824 !important;
@@ -333,29 +416,48 @@ a:hover { color: #54442f; }
      `cover`), so it keeps padding the frame either way.
      !important because the URL is set in the element's inline style.
      The attribute filter matters: appointment.html reuses the id #heroBg for a
-     full-bleed `cover` photo, which must NOT be swapped — only the `contain`
-     lockup on Home is aspect-sensitive. */
-  #heroBg[style*="contain"] {
+     full-bleed photo of the jacuzzi room, which must NOT be swapped — only the
+     Home lockup is aspect-sensitive, so the filter keys on its filename. (It
+     used to key on `contain`, which stopped matching the moment the inline
+     background-size on Home changed to `cover` — the swap silently died and
+     the 16:9 lockup was left to be cropped to a sliver on phones.) */
+  #heroBg[style*="hero-lumia-logo.jpg"] {
     background-image: url('../assets/img/hero-lumia-logo-portrait.jpg') !important;
-    /* The taller art now reaches down into the band where #heroTitle sits
-       (it is centred, then pushed 12vh lower), so the wordmark and the
-       headline overlap. Seating the art in the upper third clears the
-       headline without cropping any of it. */
-    background-position: center 32% !important;
+    /* `contain`, not `cover`: even the 5:4 crop is far wider than a phone is,
+       so a cover crop would slice the wordmark in half. Contained, the art
+       fills the width and the blurred ambient layer behind it pads the rest. */
+    background-size: contain !important;
+    /* Seats the lockup in the upper third, clear of #heroTitle (centred, then
+       pushed 12vh lower) and clear of the fixed nav. */
+    background-position: center 26% !important;
   }
 
-  /* The two full-bleed `cover` heroes (About, Book) are 3:2 landscape photos
-     shown in a portrait viewport, so ~60% of their width is cropped away. Both
-     compositions put the guest right of centre, which a default `center` crop
-     cuts out entirely — leaving an anonymous shot of an empty tub. Pulling the
-     focal point right keeps her in frame; the headline sits over the darker
-     left side of what remains, so legibility is unaffected. */
-  #aboutBg, #heroBg[style*="cover"] { background-position: 82% center !important; }
+  /* About's hero photo is 3:2 landscape shown in a portrait viewport. At
+     `cover` the scale is driven entirely by the height, so there is no
+     vertical overflow left to slide the crop through and the guest's face
+     sits pinned at mid-height — exactly where the headline and body copy
+     are. Oversizing the art to 135% of the frame's height creates that
+     headroom, and a low Y then pushes the whole image down so her face
+     clears the copy; the X keeps her horizontally centred at that scale. */
+  #aboutBg {
+    background-size: auto 135% !important;
+    background-position: 88% 0% !important;
+  }
+
+  /* The Book hero has the same problem mirrored: its guest sat dead centre,
+     directly behind "Book Your Appointment". Lowering X slides the crop left,
+     which carries her to the right — at 69% her face clears the widest
+     headline line (which ends ~245px in) while her hair stays in frame. */
+  #heroBg[style*="jacuzzi-hydrotherapy.jpg"] { background-position: 69% center !important; }
+
+  /* Copy marked .mob-hide is desktop-only — trimmed on phones where a long
+     hero paragraph covers the artwork behind it. */
+  .mob-hide { display: none !important; }
 
   /* Gallery marquee cards are intentionally oversized/cropped on desktop;
      scaled down so more than a sliver of each card shows on a phone. */
-  [style*="flex:0 0 520px;"], [style*="flex: 0 0 520px;"] { flex: 0 0 280px !important; }
-  [style*="flex:0 0 360px;"], [style*="flex: 0 0 360px;"] { flex: 0 0 220px !important; }
+  .gal-wide { width: 280px !important; }
+  .gal-narrow { width: 220px !important; }
 
   /* Testimonial sticky-drift section: the two-lane parallax only makes sense
      side-by-side on a wide screen. main.js skips wiring the drift animation
@@ -372,7 +474,16 @@ a:hover { color: #54442f; }
   h1 { font-size: 34px !important; line-height: 1.18 !important; }
   h2 { font-size: 28px !important; line-height: 1.22 !important; }
   h3 { font-size: 19px !important; }
-  #heroTitle { font-size: 34px !important; }
+  /* 38, not 40: at 40 "A Journey into Deep Healing" breaks to three lines in
+     the 313px a 390px-wide phone leaves it, and the third line pushes "Scroll
+     to enter" into the artwork. 38 is the largest size that still holds two. */
+  #heroTitle { font-size: 38px !important; }
+
+  /* The floating WhatsApp badge tucks into the corner on a phone, and its
+     hover label goes with it — there is no hover on touch, and the label
+     would sit under the thumb anyway. */
+  .wa-fab { right: 16px; bottom: 16px; width: 56px; height: 56px; }
+  .wa-fab-label { display: none; }
 }
 
 @media (max-width: 480px) {

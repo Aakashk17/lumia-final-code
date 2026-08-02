@@ -88,6 +88,48 @@
       });
     }
 
+    // ── Floating WhatsApp button ──
+    // The href is a plain wa.me link so the button still works with JS off,
+    // but wa.me always lands on an interstitial page first. On a phone we hand
+    // straight to the installed app and fall back to wa.me only if the scheme
+    // goes unanswered (the page is still visible after the delay); on a laptop
+    // we open WhatsApp Web, which is where that guest ends up anyway.
+    // The number is read off the href rather than from a constant so the
+    // markup stays the single source of truth.
+    const WA_GREETING = 'Hello Lumia International Spa, I would like to know more about your treatments.';
+    qa('.wa-fab').forEach((fab) => {
+      fab.addEventListener('click', (e) => {
+        e.preventDefault();
+        const webUrl = fab.getAttribute('href');
+        const number = (webUrl.match(/\d{6,}/) || [''])[0];
+        const text = encodeURIComponent(WA_GREETING);
+        if (isTouchDevice) {
+          const fallback = setTimeout(() => {
+            if (!document.hidden) window.location.href = webUrl + '?text=' + text;
+          }, 1200);
+          window.addEventListener('pagehide', () => clearTimeout(fallback), { once: true });
+          window.location.href = 'whatsapp://send?phone=' + number + '&text=' + text;
+        } else {
+          window.open('https://web.whatsapp.com/send?phone=' + number + '&text=' + text, '_blank', 'noopener');
+        }
+      });
+    });
+
+    // ── "Book Now" in the header ──
+    // The links point at appointment.html with no #book fragment, so the URL a
+    // guest ends up with stays clean. On the booking page itself that would
+    // mean reloading the page you are already on, so the click is intercepted
+    // and turned into a scroll to the wizard — again without writing a hash.
+    const bookTarget = document.getElementById('book');
+    if (bookTarget) {
+      qa('.book-now').forEach((link) => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          bookTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      });
+    }
+
     // ── Progressive colour reveal on scroll ──
     //
     // Per element:
@@ -228,29 +270,160 @@
   }
 
   // ────────────────────────────────────────────────────────────────────────
-  // Home (index.html) — guarded on the hero gate panels
+  // Home (index.html) — guarded on the hero keyhole plate
   // ────────────────────────────────────────────────────────────────────────
   function initHomePage() {
-    const gateL = document.getElementById('gateL');
-    const gateR = document.getElementById('gateR');
-    if (!gateL || !gateR) return;
-    const qa = (s) => Array.from(document.querySelectorAll(s));
+    if (!document.getElementById('keyholeMask')) return;
 
-    // Hero gate opening (pinned scroll). Built with a high refreshPriority:
-    // its pinSpacing inserts ~130vh into the document, so every trigger below
+    // The floating WhatsApp badge is held back on this page until the keyhole
+    // has finished opening. The hidden state is a class rather than an inline
+    // style so the badge keeps its own CSS hover transform afterwards, and it
+    // is added from script so a visitor without JS still gets a usable button.
+    const waFab = document.querySelector('.wa-fab');
+    if (waFab) waFab.classList.add('wa-fab-gated');
+    const REVEAL_AT = 0.78;
+
+    // Cut the keyhole to this viewport before anything else measures the hero.
+    shapeKeyhole();
+
+    // Re-cut on resize, debounced. The overlay it measures is fixed to the
+    // viewport, so it is accurate as soon as the resize lands; ScrollTrigger's
+    // refresh is hooked as well so a pin re-measure never leaves the two out of
+    // step on browsers that fire resize sparsely (mobile URL-bar collapse).
+    let recut;
+    window.addEventListener('resize', () => {
+      clearTimeout(recut);
+      recut = setTimeout(shapeKeyhole, 150);
+    });
+    ScrollTrigger.addEventListener('refresh', shapeKeyhole);
+
+    // prefers-reduced-motion: no pin, no scrub — just the end state. The plate
+    // goes, and with it the copy that only exists to introduce the reveal, so
+    // the hero settles into the artwork it was always opening onto.
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) {
+      gsap.set('#heroGate', { display: 'none' });
+      if (waFab) waFab.classList.add('is-in');
+    } else {
+      buildKeyhole(waFab, REVEAL_AT);
+    }
+
+    // Mouse-follow parallax, bento stagger, counters and the testimonial lanes
+    // all continue below either way — only the pinned reveal is skipped.
+    initHeroExtras();
+  }
+
+  // Redraws the keyhole in viewport pixels. Everything is derived from the hero
+  // box, so there are no breakpoints and no second asset — one rule set covers a
+  // 1920 desktop and a 390 phone.
+  function shapeKeyhole() {
+    const svg = document.getElementById('keyholeMask');
+    const path = document.getElementById('keyholePath');
+    const gate = document.getElementById('heroGate');
+    if (!svg || !path || !gate) return;
+
+    // Measured off the overlay, which is fixed to the viewport, and not off the
+    // hero: pinning gives the hero an explicit inline width and height, so after
+    // a resize it keeps reporting the size it was pinned at until ScrollTrigger
+    // re-measures. The overlay has no such lag.
+    const W = gate.clientWidth, H = gate.clientHeight;
+    if (!W || !H) return;
+
+    // Head. The radius comes off the geometric mean of the two dimensions, not
+    // off either one alone: 0.216 of it lands on 31% of width on a 1526x781
+    // laptop and 64% of width on a 390x844 phone, which is what each of those
+    // needs, and no single fraction of width or of height does both. The caps
+    // stop a short-and-wide window from filling itself with circle.
+    const r = Math.min(0.216 * Math.sqrt(W * H), H * 0.32, W * 0.34);
+    const cx = W / 2;
+    // The crown clears the top of the hero, not the header: the plate now sits
+    // over the nav, so the whole viewport height is the keyhole's to use. That
+    // is worth roughly 85px of extra stem on a laptop over clearing the nav.
+    const cy = Math.min(48, Math.max(20, H * 0.035)) + r;
+
+    // Stem. Waist at the tangent points, half a radius off the axis, so the arc
+    // is cut at 30 degrees and the head visibly overhangs. From there the sides
+    // slide out — but only slightly, to a foot narrower than the head. Running
+    // them out past the head turns the stem into a funnel, which reads as a V
+    // stood on its point rather than as the shaft of a key.
+    const neck = 0.5 * r;
+    const foot = Math.min(0.9 * r, W * 0.32);
+    const jy = cy + r * Math.cos(Math.asin(neck / r));
+    // If the circle runs low enough that little height is left, spread the
+    // flare over a nominal run instead of dividing by something near zero.
+    const run = Math.max(H - jy, H * 0.15);
+    const endY = H * 1.5;
+    const endHalf = neck + ((foot - neck) / run) * (endY - jy);
+
+    const n = (v) => Math.round(v * 10) / 10;
+    const plate = `M${n(-0.2 * W)} ${n(-0.2 * H)}H${n(1.2 * W)}V${n(1.6 * H)}H${n(-0.2 * W)}Z`;
+    const hole =
+      `M${n(cx - r)} ${n(cy)}` +
+      `A${n(r)} ${n(r)} 0 1 1 ${n(cx + r)} ${n(cy)}` +
+      `A${n(r)} ${n(r)} 0 0 1 ${n(cx + neck)} ${n(jy)}` +
+      `L${n(cx + endHalf)} ${n(endY)}L${n(cx - endHalf)} ${n(endY)}` +
+      `L${n(cx - neck)} ${n(jy)}` +
+      `A${n(r)} ${n(r)} 0 0 1 ${n(cx - r)} ${n(cy)}Z`;
+
+    svg.setAttribute('viewBox', `0 0 ${n(W)} ${n(H)}`);
+    // The box now matches the element one to one, so there is nothing to fit.
+    svg.setAttribute('preserveAspectRatio', 'none');
+    path.setAttribute('d', `${plate} ${hole}`);
+
+    const filter = document.getElementById('keyholeFeather');
+    if (filter) {
+      filter.setAttribute('x', n(-0.3 * W));
+      filter.setAttribute('y', n(-0.3 * H));
+      filter.setAttribute('width', n(1.6 * W));
+      filter.setAttribute('height', n(2.1 * H));
+      const blur = filter.querySelector('feGaussianBlur');
+      if (blur) blur.setAttribute('stdDeviation', n(Math.max(5, W * 0.0053)));
+    }
+  }
+
+  // The keyhole reveal itself, split out so initHomePage stays readable.
+  function buildKeyhole(waFab, REVEAL_AT) {
+    // Hero keyhole opening (pinned scroll). Built with a high refreshPriority:
+    // its pinSpacing inserts ~150vh into the document, so every trigger below
     // it must measure the page only after this one has laid the spacer out.
     gsap.set('#heroTitle', { scale: 1.06 });
 
-    // The hero text fades as a function of how far the PANELS have travelled,
-    // not of raw scroll: the panels run on power3.inOut, so a plain ease on the
-    // text would drift out of step with them. gateFade re-derives panel travel
-    // from tween progress, then reads the opacity off a curve keyed to it —
+    // The push-in scales about a point in the artwork's top fifth, not its
+    // centre. About the centre, the logo lockup — which sits above the centre —
+    // rides upward as the artwork grows, and by the time the gate is open it has
+    // travelled far enough to end up tucked under the fixed header. Anchoring
+    // the origin at the lockup's own height instead leaves it sitting still
+    // while the rest of the frame grows around it.
+    gsap.set(['#heroAmbient', '#heroBg'], { transformOrigin: '50% 18%' });
+
+    // The artwork also starts fractionally out of focus and pulls sharp as the
+    // gate opens, so what is behind the keyhole resolves at the same moment the
+    // headline dissolves. 3px, not more: enough to read as "not yet in focus"
+    // while the emblem behind the keyhole still holds its shape. Only the crisp
+    // layer takes the filter — #heroAmbient is already a 64px thumbnail blown up
+    // to full size, so blurring it again would cost a second full-screen pass to
+    // change nothing anyone can see. The bleed at its edges just uncovers that
+    // ambient layer, which is the same artwork, so there is no seam.
+    gsap.set('#heroBg', { filter: 'blur(3px)' });
+
+    // The header starts fully transparent as well as covered. Covered alone is
+    // not enough: the crown now sits above the header's own bottom edge, so the
+    // top of the cut-out overlaps it, and a pale slice of the nav bar shows
+    // through the keyhole against the artwork. Fading it in on the gate's curve
+    // means there is nothing to show through while the hole is small, and the
+    // header has arrived by the time the hole is wide enough to read it.
+    gsap.set('#lumiaNav', { opacity: 0 });
+
+    // The hero text fades as a function of how far the KEYHOLE has travelled,
+    // not of raw scroll: the plate runs on an ease, so a plain ease on the text
+    // would drift out of step with it. gateFade re-derives plate travel from
+    // tween progress, then reads the opacity off a curve keyed to it —
     // 1.00 shut, 0.54 half-open, 0.08 at 90%, 0 exactly as the gate lands.
     const OPACITY_AT_GATE = [1, 0.95, 0.88, 0.78, 0.66, 0.54, 0.42, 0.30, 0.18, 0.08, 0];
     const gateFade = (p) => {
-      // power3.inOut, the panels' own ease → fraction of the gate that is open.
-      // GSAP's power3 is quartic (power1 = quad, power2 = cubic, power3 = quart).
-      const open = p < 0.5 ? 8 * p * p * p * p : 1 - 8 * Math.pow(1 - p, 4);
+      // power1.inOut, the plate's own ease → fraction of the gate that is open.
+      // Must stay in step with GATE_EASE below; power1 is quadratic.
+      const open = p < 0.5 ? 2 * p * p : 1 - 2 * (1 - p) * (1 - p);
       // linear interpolation between the 10%-apart control points above
       const i = Math.min(OPACITY_AT_GATE.length - 2, Math.floor(open * 10));
       const seg = open * 10 - i;
@@ -258,18 +431,70 @@
       return 1 - opacity; // GSAP wants tween progress, and the tween ends at 0
     };
 
+    // Positions below are scroll progress, 0 → 1 across the pinned runway:
+    //   0.00 – 0.75  the opening. Plate 1 → 7, artwork 1 → 1.2.
+    //   0.78         the WhatsApp badge rises in.
+    // There is no hold at the head of the runway: the gate answers the first
+    // notch of the wheel and takes three quarters of the runway to swing, which
+    // is 112vh of scrolling — slow enough to be the whole point of the section
+    // rather than something that happens while you are on your way past it.
+    //
+    // GATE_EASE is power1.inOut, not power2. Both start from rest, but cubic is
+    // so flat off the line that the first tenth of the runway moves the plate
+    // 1.3% — indistinguishable from the hold this replaced. Quadratic is moving
+    // visibly by then and still eases in rather than jumping.
+    //
+    // For these numbers to mean scroll progress the timeline has to be exactly
+    // 1 long, so an empty tween pads out the tail after the last beat.
+    const GATE_EASE = 'power1.inOut';
+    const OPEN = { duration: 0.75, ease: GATE_EASE };
     const gateTl = gsap.timeline({
-      scrollTrigger: { trigger: '#top', start: 'top top', end: '+=130%', scrub: 0.6, pin: true, pinSpacing: true, anticipatePin: 1, refreshPriority: 10 },
+      // scrub 1.2 is the trailing lag that makes the reveal glide on after the
+      // wheel stops — the single biggest contributor to how the effect reads.
+      scrollTrigger: {
+        trigger: '#top', start: 'top top', end: '+=150%', scrub: 1.2,
+        pin: true, pinSpacing: true, anticipatePin: 1, refreshPriority: 10,
+        onUpdate: (self) => {
+          if (waFab) waFab.classList.toggle('is-in', self.progress >= REVEAL_AT);
+        },
+        // The overlay is fixed, so without this it would keep compositing a
+        // full-screen filtered plate for the whole of the rest of the page —
+        // invisible, the gate being open, but still costing a paint. Dropped
+        // once the section is behind you, restored the moment it is not.
+        onLeave: () => gsap.set('#heroGate', { visibility: 'hidden' }),
+        onEnterBack: () => gsap.set('#heroGate', { visibility: 'visible' }),
+      },
     });
     gateTl
+      // The plate outruns the artwork 30:1 in scale. That speed difference is
+      // what makes the frame feel like it is opening rather than simply zooming.
+      // 7 is the reference's own endpoint. The floor is ~4.4: the stem's outer
+      // feather edge sits 137 units off the axis and has to clear the 600-unit
+      // half-width of a width-driven viewport, or a haze survives in the corners.
+      .to('#keyholeMask', { scale: 7, ...OPEN }, 0)
+      .to(['#heroAmbient', '#heroBg'], { scale: 1.2, ...OPEN }, 0)
+      // Blur 3 -> 0 on gateFade rather than on an ease of its own: gateFade maps
+      // tween progress onto the headline's opacity curve, so running the blur
+      // through it leaves the two exactly proportional — the artwork is as sharp
+      // as the headline is faded, all the way down, and both land on zero on the
+      // same frame the gate does. This is the only blur in the reveal; the copy
+      // dissolves on opacity alone.
+      .to('#heroBg', { filter: 'blur(0px)', duration: 0.75, ease: gateFade }, 0)
       // "Scroll to enter", the spa rule and the headline share one curve and one
-      // span, so they dissolve together in lockstep with the opening panels.
-      .to('.gate-only', { opacity: 0, filter: 'blur(8px)', y: -12, duration: 0.5, ease: gateFade }, 0)
-      .to('#gateSeam', { opacity: 0, duration: 0.5, ease: gateFade }, 0)
-      .to('#gateL', { xPercent: -100, ease: 'power3.inOut' }, 0)
-      .to('#gateR', { xPercent: 100, ease: 'power3.inOut' }, 0)
-      .to('#heroTitle', { scale: 1, ease: 'power3.inOut' }, 0)
-      .to('#heroTitle', { opacity: 0, filter: 'blur(8px)', y: -18, duration: 0.5, ease: gateFade }, 0);
+      // span, so they dissolve together in lockstep with the opening plate.
+      .to('.gate-only', { opacity: 0, y: -12, duration: 0.75, ease: gateFade }, 0)
+      // gateFade runs 0 -> 1 - opacity, so a tween of 0 -> 1 carrying it is the
+      // exact mirror of the copy dissolving: the header arrives at the rate the
+      // headline leaves, and the two swap over without either being missing.
+      .to('#lumiaNav', { opacity: 1, duration: 0.75, ease: gateFade }, 0)
+      .to('#heroTitle', { scale: 1, ...OPEN }, 0)
+      .to('#heroTitle', { opacity: 0, y: -18, duration: 0.75, ease: gateFade }, 0)
+      .to({}, { duration: 0.25 }, 0.75);
+  }
+
+  // Everything on the home page that is not the hero reveal.
+  function initHeroExtras() {
+    const qa = (s) => Array.from(document.querySelectorAll(s));
 
     // Mouse-follow parallax on floating hero cards (no-op on touch devices —
     // mousemove simply never fires, and the cards are hidden on narrow
@@ -559,6 +784,47 @@
     if (sNext) sNext.addEventListener('click', () => { if (svcPage < svcPages) { svcPage++; renderSvc(); } });
     renderSvc();
 
+    // ── Time slots ──
+    // A slot that has already started today cannot be booked. The check only
+    // applies to the current date: every other date offers the full list.
+    const slotEls = qa('.opt[data-time]');
+    const slotNote = q('#slotNote');
+    const noteDefault = slotNote ? slotNote.textContent : '';
+    const isoOf = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    // "4:00 PM" -> 960 (minutes since midnight)
+    const slotMinutes = (label) => {
+      const m = /^\s*(\d{1,2}):(\d{2})\s*(AM|PM)\s*$/i.exec(label || '');
+      if (!m) return null;
+      const h = (parseFloat(m[1]) % 12) + (/pm/i.test(m[3]) ? 12 : 0);
+      return h * 60 + parseFloat(m[2]);
+    };
+    const refreshSlots = () => {
+      const now = new Date();
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      const isToday = data.date === isoOf(now);
+      let open = 0;
+      slotEls.forEach((el) => {
+        const mins = slotMinutes(el.dataset.time);
+        const past = isToday && mins !== null && mins <= nowMinutes;
+        el.classList.toggle('is-past', past);
+        el.setAttribute('aria-disabled', past ? 'true' : 'false');
+        // A slot can pass while the guest is still on the page, so a selection
+        // that has just expired is dropped rather than silently carried into
+        // the WhatsApp message.
+        if (past) {
+          if (el.classList.contains('sel')) { el.classList.remove('sel'); data.time = ''; }
+        } else { open += 1; }
+      });
+      if (slotNote) {
+        slotNote.textContent = (isToday && !open)
+          ? 'Today’s slots have all started — please choose another date.'
+          : noteDefault;
+      }
+    };
+    // Re-checked every minute so a slot the guest is looking at goes grey the
+    // moment it starts, rather than only on the next date change.
+    setInterval(refreshSlots, 60000);
+
     // Inline calendar (open by default)
     const cal = q('#cal');
     const view = new Date(); view.setDate(1);
@@ -599,12 +865,13 @@
       if (nx) nx.addEventListener('click', () => { view.setMonth(view.getMonth() + 1); renderCal(); });
       cal.querySelectorAll('[data-day]').forEach((cell) => {
         if (!cell.dataset.day) return;
-        cell.addEventListener('click', () => { data.date = cell.dataset.day; renderCal(); });
+        cell.addEventListener('click', () => { data.date = cell.dataset.day; renderCal(); refreshSlots(); });
         cell.addEventListener('mouseenter', () => { if (data.date !== cell.dataset.day) cell.style.background = '#f3e6db'; });
         cell.addEventListener('mouseleave', () => { if (data.date !== cell.dataset.day) cell.style.background = 'transparent'; });
       });
     };
     renderCal();
+    refreshSlots();
 
     const panels = qa('[data-step]');
     const showPanel = (name) => panels.forEach((p) => { p.style.display = String(p.dataset.step) === String(name) ? 'block' : 'none'; });
@@ -628,6 +895,7 @@
     const opts = qa('.opt');
     opts.forEach((opt) => {
       opt.addEventListener('click', () => {
+        if (opt.classList.contains('is-past')) return;
         const group = opt.dataset.service ? 'service' : 'time';
         opts.forEach((o) => { if ((o.dataset.service && group === 'service') || (o.dataset.time && group === 'time')) o.classList.remove('sel'); });
         opt.classList.add('sel');
