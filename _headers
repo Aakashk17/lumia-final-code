@@ -15,11 +15,26 @@
   # the maps.google.com embed URL redirects to www.google.com, so both are listed.
   Content-Security-Policy: default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; frame-src https://maps.google.com https://www.google.com; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; object-src 'none'
 
-# Photos are not content-hashed — `hero-lumia-logo.jpg` keeps its name when the
-# picture behind it changes. So the browser gets a short lease and Cloudflare's
-# edge gets a long one: the edge copy is purged automatically on every deploy,
-# while a year-long browser cache would strand returning visitors on the old
-# photo with no way to bust it. To force an instant refresh, rename the file.
+# Nothing here is content-hashed — `hero-lumia-logo.jpg` and `main.js` keep
+# their names when what is behind them changes. So the browser gets a short
+# lease and Cloudflare's edge gets a long one.
+#
+# The edge lease is a year, and a deploy does NOT purge it. That was assumed
+# once and it was wrong: a push went out with new HTML and the edge went on
+# serving a main.js from sixteen hours earlier, so the markup asked for a plate
+# the stale script had no code to paint and the hero reveal simply did not
+# happen — while the same commit was perfectly fine on GitHub Pages, which has
+# no edge in front of it. Nothing about the deploy looked wrong.
+#
+# So the URL is the cache key. /css/* and /js/* are requested with a ?v= that is
+# bumped by hand whenever either file changes, which the pages carry and explain
+# at the tags themselves; the edge cannot serve a URL it has never seen. Photos
+# have no such handle — to force one through, rename the file. To flush the edge
+# by hand: Cloudflare > the zone > Caching > Configuration > Custom Purge > URL.
+#
+# Note the browser lease below is capped by the zone's own Browser Cache TTL
+# setting (Caching > Configuration), which currently overrides these max-age
+# values to 4 hours. Changing the number here alone will not move it.
 /assets/*
   Cache-Control: public, max-age=86400, s-maxage=31536000
 
