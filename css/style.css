@@ -421,7 +421,9 @@ a:hover { color: #54442f; }
      used to key on `contain`, which stopped matching the moment the inline
      background-size on Home changed to `cover` — the swap silently died and
      the 16:9 lockup was left to be cropped to a sliver on phones.) */
-  #heroBg[style*="hero-lumia-logo.jpg"] {
+  /* #heroBlur is the same artwork one layer up, so it has to be art-directed
+     identically or the two would show different crops through the cross-fade. */
+  #heroBg[style*="hero-lumia-logo.jpg"], #heroBlur[style*="hero-lumia-logo.jpg"] {
     background-image: url('../assets/img/hero-lumia-logo-portrait.jpg') !important;
     /* `contain`, not `cover`: even the 5:4 crop is far wider than a phone is,
        so a cover crop would slice the wordmark in half. Contained, the art

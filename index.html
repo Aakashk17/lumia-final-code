@@ -118,6 +118,15 @@
          header; the marble table it trims off the bottom is already faded out
          by the gradient scrim above it. -->
     <div id="heroBg" style="position:absolute;inset:0;z-index:0;background-image:url('assets/img/hero-lumia-logo.jpg');background-repeat:no-repeat;background-size:cover;background-position:center 22%;will-change:transform;"></div>
+    <!-- The same artwork again, blurred, sitting directly over the sharp copy.
+         main.js fades THIS layer out rather than animating blur() down on the
+         layer below, because a filter that changes every frame has to be
+         re-rasterised every frame: measured at 46ms a frame over a full screen,
+         against a 16.7ms budget. A blur that never changes is rasterised once
+         and cached, and the fade is pure compositor work. It carries the same
+         push-in as the layer below so the two stay registered through the
+         cross-fade. -->
+    <div id="heroBlur" aria-hidden="true" style="position:absolute;inset:0;z-index:0;background-image:url('assets/img/hero-lumia-logo.jpg');background-repeat:no-repeat;background-size:cover;background-position:center 22%;filter:blur(3px);will-change:transform,opacity;"></div>
     <div style="position:absolute;inset:0;z-index:1;background:linear-gradient(to bottom,rgba(37,25,8,.35),rgba(37,25,8,.15) 40%,rgba(255,248,244,.05) 78%,#fff8f4);"></div>
 
     <div id="heroCards" style="position:absolute;inset:0;z-index:3;pointer-events:none;">
@@ -159,53 +168,31 @@
        and the copy has faded out, so there is nothing left to be out of place. -->
   <div id="heroGate" style="position:fixed;inset:0;z-index:160;display:flex;align-items:center;justify-content:center;overflow:hidden;pointer-events:none;">
 
-    <!-- KEYHOLE MASK -->
+    <!-- KEYHOLE PLATE -->
     <!-- One opaque plate with a keyhole cut out of it, not two sliding doors.
          Scaling the plate up from its centre drives the keyhole's edges outward,
          which reads as a gate parting; main.js takes it from 1x to 7x.
 
-         The viewBox and the path below are only what paints before main.js runs.
-         shapeKeyhole() replaces both on load and on resize, redrawing the cut in
-         viewport pixels, because two things about this shape cannot be pinned to
-         a fixed viewBox:
-           - the head has to stay sensible against BOTH dimensions — a fixed box
-             fitted with `slice` blows the circle out to the full width of a
-             phone, which stops reading as a keyhole at all;
-           - the stem's slide is a function of how much height is left below the
-             circle, which no single ratio of a fixed box can express.
-         Keeping the fallback as a fixed 1200x800 `slice` box means a viewer with
-         no JS still gets a recognisable keyhole rather than an empty plate.
+         A <canvas> painted once by shapeKeyhole(), not an <svg> with a live
+         feGaussianBlur. The SVG was correct and unaffordable: a filter attached
+         to an element whose transform changes has to be re-evaluated at the new
+         rasterisation scale on every frame, measured at 18ms a frame over the
+         filter region against a 16.7ms budget. Rasterised into a canvas the
+         feather is computed exactly once; scaling the canvas afterwards is the
+         compositor stretching a texture, which is free. The reference site
+         reaches for a PNG for the same reason.
 
-         pointer-events stays off on the <svg> itself and is switched back on for
-         the plate alone, below. On an outermost <svg> the property applies to
-         the element's whole CSS box, painted or not, so enabling it here would
-         leave a full-screen click blocker over the nav for the entire page. On
-         the path it means what is wanted instead: while the plate covers the
-         header the header cannot be clicked either, and once the gate is open
-         the only part of the plate left over the viewport is the cut-out, which
-         is unpainted and so lets the pointer through to the nav underneath. -->
-    <svg id="keyholeMask" aria-hidden="true" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;will-change:transform;">
-      <defs>
-        <!-- The feather is the reference's own. It cannot be read off the closed
-             frame — there the cut edge falls on the darkest part of the artwork,
-             so the plate and what is behind it are the same tone and the ramp you
-             see is the artwork's vignette, not the mask. Measured instead part-way
-             through the opening, where the edge is crossing evenly-lit content:
-             the 16→84% luminance ramp spans 43px at 3.23x and 47px at 3.41x, both
-             landing on σ ≈ 6.6px at 1x — which is ~0.0053 of viewport width, the
-             figure shapeKeyhole() scales it by. -->
-        <filter id="keyholeFeather" filterUnits="userSpaceOnUse" x="-280" y="-280" width="1760" height="1660">
-          <feGaussianBlur stdDeviation="6.5"></feGaussianBlur>
-        </filter>
-      </defs>
-      <!-- Subpath 1 is the plate, subpath 2 the keyhole; fill-rule="evenodd"
-           makes the second a hole. The keyhole is drawn as one continuous run —
-           down one side of the circle, out along the flaring stem, back up the
-           other side — so the arcs and the stem union cleanly rather than
-           cancelling each other out. -->
-      <path id="keyholePath" style="pointer-events:visiblePainted;" filter="url(#keyholeFeather)" fill="#160f08" fill-rule="evenodd"
-            d="M-200-200H1400V1100H-200Z M402 340 A198 198 0 1 1 798 340 A198 198 0 0 1 705 507.8 L810 1000 L390 1000 L495 507.8 A198 198 0 0 1 402 340 Z"></path>
-    </svg>
+         shapeKeyhole() also decides the shape itself, in viewport pixels, since
+         two things about it cannot be pinned to a fixed box: the head has to
+         read against BOTH dimensions (a fixed box fitted with `slice` blows the
+         circle out to the full width of a phone), and the stem's slide depends
+         on how much height is left below the circle.
+
+         pointer-events is off — a canvas is hit-tested over its whole box with
+         no notion of which pixels are painted, so leaving it on would park a
+         full-screen click blocker over the nav for the rest of the page. The nav
+         is made inert by its own opacity instead, in the timeline's onUpdate. -->
+    <canvas id="keyholeMask" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;will-change:transform;"></canvas>
 
     <div style="position:relative;z-index:1;width:100%;text-align:center;padding:0 40px;max-width:900px;transform:translateY(6vh);">
       <div class="gate-only" style="width:100%;display:flex;align-items:center;justify-content:center;gap:22px;margin-bottom:28px;">

@@ -317,10 +317,9 @@
   // box, so there are no breakpoints and no second asset — one rule set covers a
   // 1920 desktop and a 390 phone.
   function shapeKeyhole() {
-    const svg = document.getElementById('keyholeMask');
-    const path = document.getElementById('keyholePath');
+    const canvas = document.getElementById('keyholeMask');
     const gate = document.getElementById('heroGate');
-    if (!svg || !path || !gate) return;
+    if (!canvas || !gate || !canvas.getContext) return;
 
     // Measured off the overlay, which is fixed to the viewport, and not off the
     // hero: pinning gives the hero an explicit inline width and height, so after
@@ -356,6 +355,9 @@
     const endHalf = neck + ((foot - neck) / run) * (endY - jy);
 
     const n = (v) => Math.round(v * 10) / 10;
+    // The plate runs well past the canvas on every side so the feather, which
+    // eats inward from whatever edge it is given, never softens the frame edges
+    // — those have to stay fully opaque or light leaks in around the gate.
     const plate = `M${n(-0.2 * W)} ${n(-0.2 * H)}H${n(1.2 * W)}V${n(1.6 * H)}H${n(-0.2 * W)}Z`;
     const hole =
       `M${n(cx - r)} ${n(cy)}` +
@@ -365,20 +367,21 @@
       `L${n(cx - neck)} ${n(jy)}` +
       `A${n(r)} ${n(r)} 0 0 1 ${n(cx - r)} ${n(cy)}Z`;
 
-    svg.setAttribute('viewBox', `0 0 ${n(W)} ${n(H)}`);
-    // The box now matches the element one to one, so there is nothing to fit.
-    svg.setAttribute('preserveAspectRatio', 'none');
-    path.setAttribute('d', `${plate} ${hole}`);
-
-    const filter = document.getElementById('keyholeFeather');
-    if (filter) {
-      filter.setAttribute('x', n(-0.3 * W));
-      filter.setAttribute('y', n(-0.3 * H));
-      filter.setAttribute('width', n(1.6 * W));
-      filter.setAttribute('height', n(2.1 * H));
-      const blur = filter.querySelector('feGaussianBlur');
-      if (blur) blur.setAttribute('stdDeviation', n(Math.max(5, W * 0.0053)));
-    }
+    // Paint once. Capped at 2x: past that the texture costs memory and upload
+    // time for detail nobody can see in what is, at the edge, a soft gradient.
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    // σ ≈ 0.0053 of viewport width is the reference's own feather, measured
+    // part-way through its opening where the cut edge crosses evenly-lit
+    // content: a 16→84% luminance ramp of 43px at 3.23x and 47px at 3.41x.
+    ctx.filter = `blur(${n(Math.max(5, W * 0.0053))}px)`;
+    ctx.fillStyle = '#160f08';
+    ctx.fill(new Path2D(`${plate} ${hole}`), 'evenodd');
+    ctx.filter = 'none';
   }
 
   // The keyhole reveal itself, split out so initHomePage stays readable.
@@ -394,17 +397,21 @@
     // travelled far enough to end up tucked under the fixed header. Anchoring
     // the origin at the lockup's own height instead leaves it sitting still
     // while the rest of the frame grows around it.
-    gsap.set(['#heroAmbient', '#heroBg'], { transformOrigin: '50% 18%' });
+    gsap.set(['#heroAmbient', '#heroBg', '#heroBlur'], { transformOrigin: '50% 18%' });
 
     // The artwork also starts fractionally out of focus and pulls sharp as the
     // gate opens, so what is behind the keyhole resolves at the same moment the
     // headline dissolves. 3px, not more: enough to read as "not yet in focus"
-    // while the emblem behind the keyhole still holds its shape. Only the crisp
-    // layer takes the filter — #heroAmbient is already a 64px thumbnail blown up
-    // to full size, so blurring it again would cost a second full-screen pass to
-    // change nothing anyone can see. The bleed at its edges just uncovers that
-    // ambient layer, which is the same artwork, so there is no seam.
-    gsap.set('#heroBg', { filter: 'blur(3px)' });
+    // while the emblem behind the keyhole still holds its shape.
+    //
+    // It is a cross-fade between a permanently blurred copy and the sharp one,
+    // not an animated blur() on a single layer. Animating the filter meant a
+    // full-screen gaussian re-rasterised on every frame — 46ms of it, against a
+    // 16.7ms budget. Fading a layer whose blur never changes is compositor work
+    // and costs nothing. The midpoint is a blend of sharp and blurred rather
+    // than a true intermediate blur, which at 3px is not a difference the eye
+    // has anything to catch hold of.
+    gsap.set('#heroBlur', { opacity: 1 });
 
     // The header starts fully transparent as well as covered. Covered alone is
     // not enough: the crown now sits above the header's own bottom edge, so the
@@ -472,14 +479,13 @@
       // feather edge sits 137 units off the axis and has to clear the 600-unit
       // half-width of a width-driven viewport, or a haze survives in the corners.
       .to('#keyholeMask', { scale: 7, ...OPEN }, 0)
-      .to(['#heroAmbient', '#heroBg'], { scale: 1.2, ...OPEN }, 0)
-      // Blur 3 -> 0 on gateFade rather than on an ease of its own: gateFade maps
-      // tween progress onto the headline's opacity curve, so running the blur
-      // through it leaves the two exactly proportional — the artwork is as sharp
-      // as the headline is faded, all the way down, and both land on zero on the
-      // same frame the gate does. This is the only blur in the reveal; the copy
-      // dissolves on opacity alone.
-      .to('#heroBg', { filter: 'blur(0px)', duration: 0.75, ease: gateFade }, 0)
+      .to(['#heroAmbient', '#heroBg', '#heroBlur'], { scale: 1.2, ...OPEN }, 0)
+      // The blurred copy fades out on gateFade rather than on an ease of its
+      // own: gateFade maps tween progress onto the headline's opacity curve, so
+      // carrying the blur layer through it leaves the two exactly proportional —
+      // the artwork is as sharp as the headline is faded, all the way down, and
+      // both land on zero on the same frame the gate does.
+      .to('#heroBlur', { opacity: 0, duration: 0.75, ease: gateFade }, 0)
       // "Scroll to enter", the spa rule and the headline share one curve and one
       // span, so they dissolve together in lockstep with the opening plate.
       .to('.gate-only', { opacity: 0, y: -12, duration: 0.75, ease: gateFade }, 0)
