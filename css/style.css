@@ -143,6 +143,111 @@ a:hover { color: #54442f; }
   .wa-fab-ring { display: none; }
 }
 
+/* ── Mobile / tablet contact dock (speed dial) ──
+   Phones and tablets swap the single WhatsApp badge for a dock: one trigger
+   that opens two actions, WhatsApp and Call. The swap is done entirely here —
+   above the breakpoint .fab-dock is display:none and .wa-fab is untouched, so
+   nothing about the desktop badge changes.
+   1024px, not the site's usual 880px: 880 is where the *layout* stacks, but a
+   dialer and a WhatsApp app exist on every tablet up to an iPad Pro in
+   portrait (1024px), which is exactly who this dock is for. */
+.fab-dock { display: none; }
+/* Home only, same gate as the badge: main.js adds .wa-fab-gated on load and
+   .is-in once the keyhole has opened. The class is shared with .wa-fab so the
+   two are revealed by one line of script. */
+.fab-dock.wa-fab-gated { transition: transform .5s cubic-bezier(.16,1,.3,1), opacity .4s ease; }
+
+@media (max-width: 1024px) {
+  .wa-fab { display: none !important; }
+
+  .fab-dock {
+    position: fixed; right: 16px; z-index: 200;
+    /* env() keeps the trigger clear of the iOS home indicator / gesture bar. */
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    display: flex; flex-direction: column; align-items: flex-end;
+  }
+
+  /* The actions keep their box while closed — the dock is bottom-anchored, so
+     collapsing them would make the trigger jump on every open. They are made
+     click-through instead, and main.js drops them out of the tab order. */
+  .fab-acts {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 12px;
+    margin: 0 0 14px; pointer-events: none;
+  }
+  .fab-dock.is-open .fab-acts { pointer-events: auto; }
+
+  .fab-act {
+    display: flex; align-items: center; gap: 10px;
+    opacity: 0; transform: translateY(16px) scale(.7);
+    transition: opacity .28s ease, transform .42s cubic-bezier(.16,1,.3,1);
+  }
+  .fab-dock.is-open .fab-act { opacity: 1; transform: none; }
+  /* WhatsApp sits nearest the trigger and leads; Call follows a beat later so
+     the pair reads as unfolding rather than appearing. */
+  .fab-dock.is-open .fab-act-tel { transition-delay: .07s; }
+
+  .fab-act-lbl {
+    font-size: 12.5px; font-weight: 500; letter-spacing: .04em;
+    background: #302310; color: #fff8f4; white-space: nowrap;
+    padding: 7px 14px; border-radius: 9999px;
+    box-shadow: 0 12px 26px -14px rgba(0,0,0,.6);
+  }
+  .fab-act-ic {
+    flex: none; width: 48px; height: 48px; border-radius: 9999px;
+    display: flex; align-items: center; justify-content: center; color: #fff;
+    box-shadow: 0 12px 26px -10px rgba(0,0,0,.45);
+    transition: transform .3s cubic-bezier(.16,1,.3,1);
+  }
+  .fab-act-wa .fab-act-ic { background: #25d366; }
+  .fab-act-tel .fab-act-ic { background: #473824; }
+  .fab-act:active .fab-act-ic { transform: scale(.92); }
+
+  .fab-toggle {
+    position: relative; width: 56px; height: 56px; border-radius: 9999px;
+    border: none; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent;
+    display: flex; align-items: center; justify-content: center;
+    background: #302310; color: #fff8f4;
+    box-shadow: 0 14px 30px -10px rgba(48,35,16,.55), 0 4px 12px rgba(0,0,0,.18);
+    transition: transform .5s cubic-bezier(.16,1,.3,1), background-color .3s ease;
+  }
+  .fab-toggle:active { transform: scale(.94); }
+  .fab-dock.is-open .fab-toggle { background: #473824; }
+
+  /* Same expanding-ring pulse as the desktop badge, in the brand brown. It is
+     a "tap me" cue, so it stops once the dock is open. */
+  .fab-toggle-ring {
+    position: absolute; inset: 0; border-radius: 9999px; background: #302310;
+    animation: wa-pulse 2.8s cubic-bezier(.16,1,.3,1) infinite;
+  }
+  .fab-toggle-ring-2 { animation-delay: 1.4s; }
+  .fab-dock.is-open .fab-toggle-ring { display: none; }
+
+  /* Two icons cross-faded in place: the phone glyph swings out as the close
+     cross swings in, so the trigger reads as the same object in two states. */
+  .fab-toggle-ic {
+    position: absolute; z-index: 1; display: flex;
+    transition: opacity .28s ease, transform .42s cubic-bezier(.16,1,.3,1);
+  }
+  .fab-toggle-close { opacity: 0; transform: rotate(-90deg) scale(.5); }
+  .fab-dock.is-open .fab-toggle-open { opacity: 0; transform: rotate(90deg) scale(.5); }
+  .fab-dock.is-open .fab-toggle-close { opacity: 1; transform: none; }
+
+  /* A WhatsApp-green pip on the closed trigger, so the button advertises both
+     channels rather than reading as "call only". */
+  .fab-toggle-dot {
+    position: absolute; z-index: 2; top: 6px; right: 6px;
+    width: 12px; height: 12px; border-radius: 9999px;
+    background: #25d366; border: 2px solid #302310;
+    transition: opacity .28s ease, transform .28s ease;
+  }
+  .fab-dock.is-open .fab-toggle-dot { opacity: 0; transform: scale(.4); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fab-toggle-ring { display: none; }
+  .fab-act, .fab-toggle-ic, .fab-toggle-dot { transition: none; }
+}
+
 /* ── Services: coverflow "The Menu" carousel ── */
 .caro { scrollbar-width: none; -ms-overflow-style: none; }
 .caro::-webkit-scrollbar { display: none; }

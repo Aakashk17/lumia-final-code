@@ -96,8 +96,10 @@
     // we open WhatsApp Web, which is where that guest ends up anyway.
     // The number is read off the href rather than from a constant so the
     // markup stays the single source of truth.
+    // .fab-act-wa is the same link inside the mobile/tablet dock below, and
+    // wants exactly the same hand-off.
     const WA_GREETING = 'Hello Lumia International Spa, I would like to know more about your treatments.';
-    qa('.wa-fab').forEach((fab) => {
+    qa('.wa-fab, .fab-act-wa').forEach((fab) => {
       fab.addEventListener('click', (e) => {
         e.preventDefault();
         const webUrl = fab.getAttribute('href');
@@ -114,6 +116,44 @@
         }
       });
     });
+
+    // ── Mobile / tablet contact dock ──
+    // CSS decides whether this is on screen at all (≤1024px), so there is no
+    // width check here — on a desktop the dock is display:none and the trigger
+    // can never be clicked. The actions are plain links and are visible with JS
+    // off; all this adds is the fold-away, which is why the closed state is set
+    // from script rather than baked into the markup.
+    const dock = document.querySelector('.fab-dock');
+    if (dock) {
+      const toggle = dock.querySelector('.fab-toggle');
+      const acts = Array.from(dock.querySelectorAll('.fab-act'));
+      const setOpen = (open) => {
+        dock.classList.toggle('is-open', open);
+        toggle.setAttribute('aria-expanded', String(open));
+        // The actions stay in the DOM and keep their box while closed, so they
+        // have to be taken out of the tab order by hand or a keyboard user
+        // would land on two invisible links.
+        acts.forEach((a) => { a.tabIndex = open ? 0 : -1; });
+      };
+
+      toggle.addEventListener('click', () => setOpen(!dock.classList.contains('is-open')));
+
+      // Picking an action leaves the dock open behind the app switch. Both
+      // targets can return the guest to this page (a cancelled call, a back
+      // swipe out of WhatsApp), and finding it still expanded reads as stuck.
+      acts.forEach((a) => a.addEventListener('click', () => setOpen(false)));
+
+      // Tapping anywhere else, or Escape, folds it away — the usual escape
+      // hatch for anything that opens over the page.
+      document.addEventListener('click', (e) => {
+        if (!dock.contains(e.target)) setOpen(false);
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape' || !dock.classList.contains('is-open')) return;
+        setOpen(false);
+        toggle.focus();
+      });
+    }
 
     // ── "Book Now" in the header ──
     // The links point at appointment.html with no #book fragment, so the URL a
@@ -279,8 +319,10 @@
     // has finished opening. The hidden state is a class rather than an inline
     // style so the badge keeps its own CSS hover transform afterwards, and it
     // is added from script so a visitor without JS still gets a usable button.
-    const waFab = document.querySelector('.wa-fab');
-    if (waFab) waFab.classList.add('wa-fab-gated');
+    // Both the desktop badge and the mobile/tablet dock are gated — only one of
+    // the two is ever on screen, so this is one list, not a branch on width.
+    const gatedFabs = Array.from(document.querySelectorAll('.wa-fab, .fab-dock'));
+    gatedFabs.forEach((el) => el.classList.add('wa-fab-gated'));
     const REVEAL_AT = 0.78;
 
     // Cut the keyhole to this viewport before anything else measures the hero.
@@ -303,9 +345,9 @@
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduceMotion) {
       gsap.set('#heroGate', { display: 'none' });
-      if (waFab) waFab.classList.add('is-in');
+      gatedFabs.forEach((el) => el.classList.add('is-in'));
     } else {
-      buildKeyhole(waFab, REVEAL_AT);
+      buildKeyhole(gatedFabs, REVEAL_AT);
     }
 
     // Mouse-follow parallax, bento stagger, counters and the testimonial lanes
@@ -385,7 +427,7 @@
   }
 
   // The keyhole reveal itself, split out so initHomePage stays readable.
-  function buildKeyhole(waFab, REVEAL_AT) {
+  function buildKeyhole(gatedFabs, REVEAL_AT) {
     // Hero keyhole opening (pinned scroll). Built with a high refreshPriority:
     // its pinSpacing inserts ~150vh into the document, so every trigger below
     // it must measure the page only after this one has laid the spacer out.
@@ -462,7 +504,7 @@
         trigger: '#top', start: 'top top', end: '+=150%', scrub: 1.2,
         pin: true, pinSpacing: true, anticipatePin: 1, refreshPriority: 10,
         onUpdate: (self) => {
-          if (waFab) waFab.classList.toggle('is-in', self.progress >= REVEAL_AT);
+          gatedFabs.forEach((el) => el.classList.toggle('is-in', self.progress >= REVEAL_AT));
         },
         // The overlay is fixed, so without this it would keep compositing a
         // full-screen filtered plate for the whole of the rest of the page —

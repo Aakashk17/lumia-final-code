@@ -36,7 +36,7 @@
      to either file only reaches visitors under a URL the edge has never seen.
      Bump it here AND on the script tag at the foot of this page, on every page,
      whenever css/style.css or js/main.js changes. -->
-<link rel="stylesheet" href="css/style.css?v=1">
+<link rel="stylesheet" href="css/style.css?v=2">
 </head>
 <body>
 <div style="font-family:'Comfortaa',sans-serif;background:#fff8f4;color:#211a14;overflow-x:clip;position:relative;">
@@ -205,7 +205,7 @@
         <div style="background:#302310;border-radius:16px;padding:40px;">
           <h3 style="font-size:22px;font-weight:400;color:#fceee4;margin:0 0 24px;">Good to know</h3>
           <div style="display:flex;flex-direction:column;gap:20px;">
-            <div style="display:flex;gap:14px;align-items:flex-start;"><span class="ms" style="font-size:22px;color:#b7a187;">schedule</span><div><div style="font-size:15px;color:#fceee4;">Open daily</div><div style="font-size:13px;font-weight:300;color:#b7a187;">10:00 AM – 9:00 PM</div></div></div>
+            <div style="display:flex;gap:14px;align-items:flex-start;"><span class="ms" style="font-size:22px;color:#b7a187;">schedule</span><div><div style="font-size:15px;color:#fceee4;">Open daily</div><div style="font-size:13px;font-weight:300;color:#b7a187;">10:00 AM – 10:00 PM</div></div></div>
             <div style="display:flex;gap:14px;align-items:flex-start;"><span class="ms" style="font-size:22px;color:#b7a187;">call</span><div><div style="font-size:15px;color:#fceee4;">+91 90196 63937</div><div style="font-size:13px;font-weight:300;color:#b7a187;">Call or WhatsApp to confirm</div></div></div>
             <div style="display:flex;gap:14px;align-items:flex-start;"><span class="ms" style="font-size:22px;color:#b7a187;">location_on</span><div><div style="font-size:15px;color:#fceee4;">HSR Layout, Bengaluru</div><div style="font-size:13px;font-weight:300;color:#b7a187;">Rohan Plaza, 17th Cross, Sector 1</div></div></div>
           </div>
@@ -281,7 +281,7 @@
       <div>
         <h4 style="font-size:14px;font-weight:500;letter-spacing:.1em;color:#302310;margin:0 0 24px;">Opening Hours</h4>
         <p style="font-size:15px;font-weight:300;line-height:1.6;color:#4d463d;margin:0 0 4px;">Open daily</p>
-        <p style="font-size:15px;font-weight:300;line-height:1.6;color:#4d463d;margin:0 0 4px;">10:00 AM &ndash; 9:00 PM</p>
+        <p style="font-size:15px;font-weight:300;line-height:1.6;color:#4d463d;margin:0 0 4px;">10:00 AM &ndash; 10:00 PM</p>
         <a href="mailto:lumiainternationalspa@gmail.com" class="textlink mail-link" style="display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:500;letter-spacing:.06em;color:#302310;word-break:break-all;">lumiainternationalspa@gmail.com</a>
       </div>
     </div>
@@ -305,10 +305,38 @@
     <span class="wa-fab-label">Chat with us</span>
   </a>
 
+  <!-- ============================================================
+       MOBILE / TABLET CONTACT DOCK — duplicated on all four pages.
+       At 1024px and below, style.css hides the .wa-fab badge above and shows
+       this instead: one trigger that opens a WhatsApp action and a Call
+       action. Both are ordinary links, so the dock still works with
+       JavaScript disabled (the actions are simply always visible); main.js
+       adds the open/close behaviour and the WhatsApp app hand-off.
+       ============================================================ -->
+  <div class="fab-dock">
+    <div class="fab-acts" id="fabActs">
+      <a href="tel:+919019663937" class="fab-act fab-act-tel" tabindex="-1" aria-label="Call Lumia International Spa on +91 90196 63937">
+        <span class="fab-act-lbl">Call us</span>
+        <span class="fab-act-ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.03-.24c1.12.37 2.33.57 3.56.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.24.2 2.44.57 3.56a1 1 0 0 1-.25 1.03l-2.2 2.2z"></path></svg></span>
+      </a>
+      <a href="https://wa.me/919019663937" class="fab-act fab-act-wa" target="_blank" rel="noopener" tabindex="-1" aria-label="Chat with us on WhatsApp">
+        <span class="fab-act-lbl">WhatsApp</span>
+        <span class="fab-act-ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2.5a9.46 9.46 0 0 0-8.1 14.32L2.5 21.5l4.8-1.4A9.46 9.46 0 1 0 12.04 2.5zm0 1.7a7.76 7.76 0 0 1 6.6 11.86l-.34.54.62 2.26-2.32-.61-.52.31a7.76 7.76 0 1 1-4.04-14.36zm-3.06 4c-.15 0-.4.06-.6.29-.2.23-.78.76-.78 1.85s.8 2.15.9 2.3c.12.15 1.57 2.5 3.9 3.4 1.94.77 2.34.62 2.76.58.42-.04 1.36-.55 1.55-1.09.19-.53.19-.99.13-1.08-.06-.1-.2-.15-.43-.27-.23-.11-1.36-.67-1.57-.75-.21-.08-.36-.11-.51.12-.15.23-.58.75-.71.9-.13.15-.26.17-.49.06-.23-.12-.97-.36-1.85-1.14-.68-.61-1.14-1.36-1.28-1.59-.13-.23-.01-.35.1-.47.1-.1.23-.26.34-.4.11-.13.15-.22.23-.38.08-.15.04-.29-.02-.4-.06-.12-.5-1.26-.7-1.72-.18-.44-.37-.38-.51-.39z"></path></svg></span>
+      </a>
+    </div>
+    <button type="button" class="fab-toggle" id="fabToggle" aria-expanded="false" aria-controls="fabActs" aria-label="Contact us">
+      <span class="fab-toggle-ring" aria-hidden="true"></span>
+      <span class="fab-toggle-ring fab-toggle-ring-2" aria-hidden="true"></span>
+      <span class="fab-toggle-ic fab-toggle-open" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.03-.24c1.12.37 2.33.57 3.56.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.24.2 2.44.57 3.56a1 1 0 0 1-.25 1.03l-2.2 2.2z"></path></svg></span>
+      <span class="fab-toggle-ic fab-toggle-close" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"></path></svg></span>
+      <span class="fab-toggle-dot" aria-hidden="true"></span>
+    </button>
+  </div>
+
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <!-- bump ?v together with the stylesheet in the head when this file changes -->
-<script src="js/main.js?v=1"></script>
+<script src="js/main.js?v=2"></script>
 </body>
 </html>
