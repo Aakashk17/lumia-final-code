@@ -54,9 +54,14 @@ duplicate of it.
 _headers        Cloudflare-only: security headers + cache lifetimes. Ignored elsewhere.
 robots.txt      Points crawlers at the sitemap.
 sitemap.xml     The four pages. Update <lastmod> when content changes materially.
-favicon.svg     The one source for the icon; the PNGs below are rendered from it.
-favicon-32.png  Fallback for browsers without SVG icon support.
-apple-touch-icon.png   iOS home-screen icon (180x180).
+lumia_favicon.svg      Tab icon. Wraps a 64px bitmap rather than paths: the mark is
+                       raster art, so there is no vector to draw. 64 covers a 32px
+                       tab at 2x, which is the largest a browser asks it for.
+lumia_favicon-32.png   Fallback for browsers without SVG icon support.
+apple-touch-icon.png   iOS home-screen icon (180x180). Keeps this exact name because
+                       iOS probes /apple-touch-icon.png even with no <link> for it.
+                       All three are rendered from the logo master, not from each
+                       other — regenerate them together when the mark changes.
 assets/img/og-cover.jpg  1200x630 link preview, shown when the site is shared on WhatsApp.
 ```
 
