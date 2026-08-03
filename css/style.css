@@ -511,33 +511,8 @@ a:hover { color: #54442f; }
      narrow screens — hidden rather than repositioned. */
   .hero-float { display: none !important; }
 
-  /* Home hero art direction. #heroBg is a logo lockup drawn with
-     `background-size:contain`, so the art's own aspect ratio decides how much
-     of the hero it can fill — cropping is not an option, it would cut the
-     wordmark. The 16:9 lockup fills a wide viewport but collapses to a thin
-     band once the viewport turns portrait, so below this breakpoint we swap in
-     the 5:4 crop of the same artwork, which renders ~40% taller in the same
-     width. The blurred ambient layer behind it is ratio-agnostic (it uses
-     `cover`), so it keeps padding the frame either way.
-     !important because the URL is set in the element's inline style.
-     The attribute filter matters: appointment.html reuses the id #heroBg for a
-     full-bleed photo of the jacuzzi room, which must NOT be swapped — only the
-     Home lockup is aspect-sensitive, so the filter keys on its filename. (It
-     used to key on `contain`, which stopped matching the moment the inline
-     background-size on Home changed to `cover` — the swap silently died and
-     the 16:9 lockup was left to be cropped to a sliver on phones.) */
-  /* #heroBlur is the same artwork one layer up, so it has to be art-directed
-     identically or the two would show different crops through the cross-fade. */
-  #heroBg[style*="hero-lumia-logo.jpg"], #heroBlur[style*="hero-lumia-logo.jpg"] {
-    background-image: url('../assets/img/hero-lumia-logo-portrait.jpg') !important;
-    /* `contain`, not `cover`: even the 5:4 crop is far wider than a phone is,
-       so a cover crop would slice the wordmark in half. Contained, the art
-       fills the width and the blurred ambient layer behind it pads the rest. */
-    background-size: contain !important;
-    /* Seats the lockup in the upper third, clear of #heroTitle (centred, then
-       pushed 12vh lower) and clear of the fixed nav. */
-    background-position: center 26% !important;
-  }
+  /* Home hero art direction lives in its own breakpoints at the foot of this
+     file — it no longer shares this one. See "Home hero art direction" there. */
 
   /* About's hero photo is 3:2 landscape shown in a portrait viewport. At
      `cover` the scale is driven entirely by the height, so there is no
@@ -614,4 +589,102 @@ a:hover { color: #54442f; }
      desktop padding so both fit, and allow wrapping as a final fallback. */
   #wizNav { flex-wrap: wrap !important; gap: 12px !important; }
   #btnBack, #btnNext { padding: 13px 18px !important; }
+}
+
+/* ── Home hero art direction ──────────────────────────────────────────────
+   Three cuts of the same scene, one per shape of screen, because a single
+   image cannot survive the range: the desktop lockup is 16:9 and a phone is
+   roughly 9:19.5, which is not a crop of it — it is a different photograph.
+   The mobile and tablet cuts are composed portrait, wordmark and all, so
+   unlike the old 16:9 lockup they take `cover` without losing anything.
+
+   Both are matched to the aspect of the devices they serve (3:4 is an iPad in
+   portrait almost exactly, 9:19.4 a modern phone), so `cover` scales them with
+   next to no crop and `center` is honestly centred — no nudged Y like the
+   desktop rule needs.
+
+   These sit at the foot of the file, after the 880px and 480px blocks, so the
+   cascade runs widest-first: tablet, then phone overriding it. Moving them
+   earlier would let the tablet cut win on phones.
+
+   !important because the URL is set in the element's inline style.
+   The [style*=] filter matters: appointment.html reuses the id #heroBg for a
+   full-bleed photo of the jacuzzi room, which must NOT be swapped — only the
+   Home artwork is aspect-sensitive, so the filter keys on its filename.
+   #heroBlur is the same artwork one layer up (main.js cross-fades the two), so
+   it has to be art-directed identically or the two would show different crops
+   through the fade. */
+
+/* Tablets — 3:4, 1086x1448. */
+@media (max-width: 1024px) {
+  #heroBg[style*="hero-lumia-logo.jpg"], #heroBlur[style*="hero-lumia-logo.jpg"] {
+    background-image: url('../assets/img/hero-lumia-logo-tablet.jpg') !important;
+    background-size: cover !important;
+    background-position: center !important;
+  }
+}
+
+/* Phones — 9:19.4, 853x1844. 600px is the conventional phone/tablet line: the
+   widest phone in portrait is ~430px and the narrowest tablet ~768px, so
+   nothing real sits near the boundary. */
+@media (max-width: 600px) {
+  #heroBg[style*="hero-lumia-logo.jpg"], #heroBlur[style*="hero-lumia-logo.jpg"] {
+    background-image: url('../assets/img/hero-lumia-logo-mobile.jpg') !important;
+  }
+}
+
+/* ── Gate copy vs. the wordmark in the artwork ────────────────────────────
+   The portrait cuts carry the LUMIA lockup baked in, near the middle of the
+   frame, where the old 16:9 art had nothing. The desktop art direction seated
+   its lockup in the upper third specifically to leave the headline band clear;
+   full-bleed portrait art has no such room, and the headline lands straight on
+   the wordmark — measured at 44-51% of a 375x812 phone against a headline
+   occupying 44.3-56%.
+
+   Nudging the fade will not help: on a narrow viewport shapeKeyhole() makes
+   the keyhole width-driven, so its opening already spans the whole centre
+   column at scale 1 and the wordmark is exposed from the first frame of the
+   reveal, before any fade has begun.
+
+   So the copy moves instead of the art. The art is left at a clean `cover`
+   because these two cuts were commissioned at the aspect of the devices they
+   serve — buying vertical slack by oversizing would cost ~16% off the top and
+   ~8% down each side of a picture that currently fits with none.
+
+   The whole block moves as one, which puts the spa divider on the wordmark, so
+   that goes: it is the least load-bearing thing here (two hairlines and a
+   glyph), and the artwork is already ornamented in that band. Dropping it also
+   pays for most of the shift, keeping "Scroll to enter" out of the bottom of
+   the gradient, where the scrim has gone to solid #fff8f4 and pale gold on
+   cream cannot be read.
+
+   The wrapper's transform is an inline style, hence !important. GSAP animates
+   .gate-only's own transform during the reveal, so nothing here touches that —
+   only margins. */
+@media (max-width: 1024px) {
+  /* Tablet: wordmark 49.3-59%, so the headline clears it at 60%. */
+  #heroGate > div[style*="translateY(6vh)"] { transform: translateY(19vh) !important; }
+  #heroGate > div[style*="translateY(6vh)"] > .gate-only:first-child { display: none !important; }
+  /* Claws back the height the shift added, so the scroll cue stays above the
+     scrim's fade to cream. */
+  #heroGate > div[style*="translateY(6vh)"] > .gate-only:last-child { margin-top: 14px !important; }
+}
+
+@media (max-width: 600px) {
+  /* Phone: wordmark sits higher (44-51%), so the headline needs less push. */
+  #heroGate > div[style*="translateY(6vh)"] { transform: translateY(16vh) !important; }
+  /* A phone is the tightest case: two headline lines instead of the tablet's
+     one, so the scroll cue needs the extra 6px to stay clear of the scrim. */
+  #heroGate > div[style*="translateY(6vh)"] > .gate-only:last-child { margin-top: 8px !important; }
+}
+
+/* Short phones. 38px wraps "A Journey into Deep Healing" to THREE lines in the
+   ~280px a 360px-wide screen leaves it, and a third line costs 11% of a 640px
+   viewport at both ends: it lifts the headline back into the wordmark and drops
+   the scroll cue to 86%, well into the scrim's fade to cream. 30px holds two
+   lines at that width, which is what the shift above is sized for.
+   Keyed on height as well as width — a 360px-wide phone that is 800px tall has
+   the room and keeps the full-size headline. */
+@media (max-width: 600px) and (max-height: 730px) {
+  #heroTitle { font-size: 30px !important; }
 }
