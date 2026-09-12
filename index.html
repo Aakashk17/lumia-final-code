@@ -33,7 +33,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;700&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
+<!-- icon_names= subsets the icon font to the glyphs the site uses (alphabetical,
+     as Google requires): ~35 KB instead of the ~4 MB full set. Keep it in sync
+     when adding an icon anywhere in the HTML or js/main.js. display=block, not
+     swap: the icons are ligatures, so a swap would flash the raw icon names
+     ("expand_more") as text until the font arrives. -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=arrow_back,arrow_forward,calendar_month,call,chat,check,check_circle,chevron_left,chevron_right,diamond,directions,diversity_2,expand_more,format_quote,groups,location_on,lock,menu,nights_stay,schedule,spa,star,verified,water_drop&display=block" rel="stylesheet">
 <!-- ?v is a cache key, not a version. Cloudflare holds /css/* and /js/* for a
      year at the edge (see _headers) and a deploy does not purge it, so a change
      to either file only reaches visitors under a URL the edge has never seen.
