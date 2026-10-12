@@ -307,6 +307,9 @@
       navToggle.addEventListener('click', () => setOpen(!navPanel.classList.contains('open')));
       navPanel.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setOpen(false)));
     }
+
+    // ── Exclusive Offers & Right-Side Exit Pop-Up with Timer ──
+    initOffersAndExitPopup();
   }
 
   // ────────────────────────────────────────────────────────────────────────
@@ -1041,4 +1044,274 @@
       }
     }
   }
+
+  // ────────────────────────────────────────────────────────────────────────
+  // Exclusive Offers & Right-Side Exit Pop-Up with Timer
+  // ────────────────────────────────────────────────────────────────────────
+  function initOffersAndExitPopup() {
+    const CODE_UNMASKED = 'LUMIA-VIP30';
+    const RECEPTION_PHONE = '+919019663937';
+
+    // 1. Inject popup & badge markup dynamically if not present in DOM
+    if (!document.getElementById('exitOfferPopup')) {
+      const popupHtml = `
+      <button type="button" id="exitOfferBadge" class="exit-offer-badge" aria-label="View Special Offer">
+        <span class="badge-ring" aria-hidden="true"></span>
+        <span class="badge-ring badge-ring-2" aria-hidden="true"></span>
+        <span class="badge-ic">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-2.18c.11-.31.18-.65.18-1a3 3 0 0 0-3-3c-1.26 0-2.3.77-2.73 1.87L12 4.63l-.27-.76A3.003 3.003 0 0 0 9 2C7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1h-2.22l.53-1.49C13.54 4.2 14.23 4 15 4zM9 4c.77 0 1.46.2 1.69.51L11.22 6H9c-.55 0-1-.45-1-1s.45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 13.83 8.62 14.5 11 8h2l2.38 6.5 1.62-.67L14.92 8H20v6z"/></svg>
+        </span>
+        <span class="badge-text" style="letter-spacing: .06em;">30% OFF</span>
+        <span class="badge-timer timer-val-badge" style="font-size: 11px; opacity: .85; letter-spacing: .08em; font-family: monospace;">03:51:51</span>
+      </button>
+
+      <div id="exitOfferPopup" class="exit-offer-popup" role="dialog" aria-labelledby="exitPopupTitle" aria-modal="true">
+        <button type="button" class="exit-popup-close" id="exitPopupClose" aria-label="Close offer">&times;</button>
+        <div style="text-align: center;">
+          <div style="display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(212,175,55,.45); background: rgba(212,175,55,.1); border-radius: 9999px; padding: 4px 14px; margin-bottom: 12px;">
+            <span class="live-dot" style="width: 7px; height: 7px; border-radius: 9999px; background: #e53e3e; box-shadow: 0 0 6px #e53e3e;"></span>
+            <span style="font-size: 10px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: #f7dfc2;">Today Only</span>
+          </div>
+          <h3 id="exitPopupTitle" style="font-size: 24px; font-weight: 400; color: #f7dfc2; line-height: 1.15; margin: 0 0 8px;">Unlock up to 30% OFF</h3>
+          <p style="font-size: 13px; font-weight: 300; line-height: 1.5; color: #d0c5b9; margin: 0 0 16px;">VIP &amp; VVIP suites, couple packages and first-visit therapies. Your private code is ready.</p>
+          <div class="popup-timer-wrap" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 16px;">
+            <div class="timer-unit timer-unit-sm">
+              <span class="timer-val timer-hrs">03</span>
+              <span class="timer-lbl">HRS</span>
+            </div>
+            <span class="timer-colon">:</span>
+            <div class="timer-unit timer-unit-sm">
+              <span class="timer-val timer-min">52</span>
+              <span class="timer-lbl">MIN</span>
+            </div>
+            <span class="timer-colon">:</span>
+            <div class="timer-unit timer-unit-sm">
+              <span class="timer-val timer-sec">10</span>
+              <span class="timer-lbl">SEC</span>
+            </div>
+          </div>
+          <div class="code-box" style="border: 1.5px dashed rgba(212,175,55,.6); border-radius: 8px; padding: 10px 14px; background: rgba(18,10,5,.6); margin-bottom: 12px; text-align: center;">
+            <span style="display: block; font-size: 9px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: #bcaaa0; margin-bottom: 3px;">Your Offer Code</span>
+            <span class="offer-code-text" style="font-size: 20px; font-weight: 700; letter-spacing: .15em; color: #f7dfc2;">LUMIA-&bull;&bull;&bull;&bull;</span>
+          </div>
+          <button type="button" class="gold-reveal-btn reveal-trigger" data-target="popup" style="width: 100%; background: linear-gradient(135deg,#e5c189 0%,#c99e5a 100%); color: #211a14; font-family: inherit; font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 13px 18px; border-radius: 8px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all .3s ease; box-shadow: 0 8px 20px -6px rgba(201,158,90,.4); margin-bottom: 12px;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-2.18c.11-.31.18-.65.18-1a3 3 0 0 0-3-3c-1.26 0-2.3.77-2.73 1.87L12 4.63l-.27-.76A3.003 3.003 0 0 0 9 2C7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1h-2.22l.53-1.49C13.54 4.2 14.23 4 15 4zM9 4c.77 0 1.46.2 1.69.51L11.22 6H9c-.55 0-1-.45-1-1s.45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 13.83 8.62 14.5 11 8h2l2.38 6.5 1.62-.67L14.92 8H20v6z"/></svg>
+            <span>Reveal My Code</span>
+          </button>
+          <a href="tel:${RECEPTION_PHONE}" class="code-revealed-call code-revealed-mobile" style="display: none; width: 100%; background: #f7dfc2; color: #211a14; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 13px 18px; border-radius: 8px; text-align: center; align-items: center; justify-content: center; gap: 8px; text-decoration: none; transition: all .3s ease; margin-bottom: 12px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.03-.24c1.12.37 2.33.57 3.56.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.24.2 2.44.57 3.56a1 1 0 0 1-.25 1.03l-2.2 2.2z"/></svg>
+            <span>Call Reception Now</span>
+          </a>
+          <a href="https://web.whatsapp.com/send?phone=919019663937&amp;text=Hello%20Lumia%20International%20Spa%2C%20I%20have%20revealed%20VIP%20code%20${CODE_UNMASKED}%20and%20would%20like%20to%20know%20the%20offers." class="code-revealed-call code-revealed-desktop" target="_blank" rel="noopener" style="display: none; width: 100%; background: #f7dfc2; color: #211a14; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 13px 18px; border-radius: 8px; text-align: center; align-items: center; justify-content: center; gap: 8px; text-decoration: none; transition: all .3s ease; margin-bottom: 12px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2.5a9.46 9.46 0 0 0-8.1 14.32L2.5 21.5l4.8-1.4A9.46 9.46 0 1 0 12.04 2.5zm0 1.7a7.76 7.76 0 0 1 6.6 11.86l-.34.54.62 2.26-2.32-.61-.52.31a7.76 7.76 0 1 1-4.04-14.36zm-3.06 4c-.15 0-.4.06-.6.29-.2.23-.78.76-.78 1.85s.8 2.15.9 2.3c.12.15 1.57 2.5 3.9 3.4 1.94.77 2.34.62 2.76.58.42-.04 1.36-.55 1.55-1.09.19-.53.19-.99.13-1.08-.06-.1-.2-.15-.43-.27-.23-.11-1.36-.67-1.57-.75-.21-.08-.36-.11-.51.12-.15.23-.58.75-.71.9-.13.15-.26.17-.49.06-.23-.12-.97-.36-1.85-1.14-.68-.61-1.14-1.36-1.28-1.59-.13-.23-.01-.35.1-.47.1-.1.23-.26.34-.4.11-.13.15-.22.23-.38.08-.15.04-.29-.02-.4-.06-.12-.5-1.26-.7-1.72-.18-.44-.37-.38-.51-.39z"/></svg>
+            <span>Chat on WhatsApp</span>
+          </a>
+          <button type="button" class="exit-popup-dismiss" id="exitPopupDismiss" style="background: none; border: none; color: #bcaaa0; font-size: 12px; font-weight: 400; text-decoration: underline; cursor: pointer; padding: 6px; transition: color .2s ease;">No thanks, I'll pay full price</button>
+        </div>
+      </div>`;
+      document.body.insertAdjacentHTML('beforeend', popupHtml);
+    }
+
+    const popup = document.getElementById('exitOfferPopup');
+    const badge = document.getElementById('exitOfferBadge');
+    const closeBtn = document.getElementById('exitPopupClose');
+    const dismissBtn = document.getElementById('exitPopupDismiss');
+
+    // 2. Synchronized Live Countdown Timer
+    const STORAGE_KEY = 'lumia_offer_ends_at';
+    let targetTime = parseInt(localStorage.getItem(STORAGE_KEY), 10);
+    const now = Date.now();
+    // Default duration: 3 hours, 51 minutes, 51 seconds (~13911 seconds)
+    if (!targetTime || targetTime <= now || (targetTime - now) > 24 * 3600 * 1000) {
+      targetTime = now + (3 * 3600 + 51 * 60 + 51) * 1000;
+      localStorage.setItem(STORAGE_KEY, targetTime.toString());
+    }
+
+    function updateTimer() {
+      const remaining = Math.max(0, targetTime - Date.now());
+      if (remaining <= 0) {
+        targetTime = Date.now() + (3 * 3600 + 51 * 60 + 51) * 1000;
+        localStorage.setItem(STORAGE_KEY, targetTime.toString());
+      }
+      const totalSec = Math.floor(remaining / 1000);
+      const hrs = Math.floor(totalSec / 3600);
+      const mins = Math.floor((totalSec % 3600) / 60);
+      const secs = totalSec % 60;
+
+      const pad = (n) => String(n).padStart(2, '0');
+      const hStr = pad(hrs);
+      const mStr = pad(mins);
+      const sStr = pad(secs);
+
+      document.querySelectorAll('.timer-hrs').forEach((el) => { el.textContent = hStr; });
+      document.querySelectorAll('.timer-min').forEach((el) => { el.textContent = mStr; });
+      document.querySelectorAll('.timer-sec').forEach((el) => { el.textContent = sStr; });
+      document.querySelectorAll('.timer-val-badge').forEach((el) => { el.textContent = `${hStr}:${mStr}:${sStr}`; });
+    }
+    updateTimer();
+    setInterval(updateTimer, 1000);
+
+    // 3. Code Reveal Functionality
+    function syncCtaButtons() {
+      const isTouch = window.matchMedia('(hover: none), (pointer: coarse)').matches;
+      const isDesktop = window.innerWidth > 1024 && !isTouch;
+      document.querySelectorAll('.code-revealed-desktop').forEach((btn) => {
+        btn.style.display = isDesktop ? 'flex' : 'none';
+      });
+      document.querySelectorAll('.code-revealed-mobile').forEach((btn) => {
+        btn.style.display = isDesktop ? 'none' : 'flex';
+      });
+    }
+
+    function revealOfferCode() {
+      document.body.classList.add('offer-code-revealed');
+
+      // Unmask text on all code boxes
+      document.querySelectorAll('.offer-code-text').forEach((el) => {
+        el.textContent = CODE_UNMASKED;
+        el.style.color = '#fff';
+        el.style.letterSpacing = '.1em';
+      });
+
+      // Switch buttons to action
+      document.querySelectorAll('.reveal-trigger').forEach((btn) => {
+        btn.style.display = 'none';
+      });
+      syncCtaButtons();
+
+      // Copy to clipboard
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(CODE_UNMASKED).catch(() => {});
+      }
+
+      // Friendly notification toast
+      const isTouch = window.matchMedia('(hover: none), (pointer: coarse)').matches;
+      const isDesktop = window.innerWidth > 1024 && !isTouch;
+      const toastAction = isDesktop ? 'Chat with us on WhatsApp.' : 'Quote ' + CODE_UNMASKED + ' when you call.';
+      showToast('Offer code copied! ' + toastAction);
+      localStorage.setItem('lumia_code_revealed', 'true');
+    }
+
+    document.querySelectorAll('.reveal-trigger').forEach((btn) => {
+      btn.addEventListener('click', revealOfferCode);
+    });
+
+    if (localStorage.getItem('lumia_code_revealed') === 'true') {
+      document.body.classList.add('offer-code-revealed');
+      document.querySelectorAll('.offer-code-text').forEach((el) => {
+        el.textContent = CODE_UNMASKED;
+      });
+      document.querySelectorAll('.reveal-trigger').forEach((btn) => {
+        btn.style.display = 'none';
+      });
+      syncCtaButtons();
+    }
+
+    // Keep revealed CTAs in sync on viewport resize
+    window.addEventListener('resize', () => {
+      if (document.body.classList.contains('offer-code-revealed')) {
+        syncCtaButtons();
+      }
+    });
+
+    // 3b. "Call to know" / Deal Links Handler:
+    // In mobile view or tab view (<=1024px or touch) -> dial reception (tel:+919019663937)
+    // In desktop view (>1024px) -> open WhatsApp with custom inquiry message
+    document.querySelectorAll('.deal-price-link').forEach((link) => {
+      link.addEventListener('click', (e) => {
+        const isTouch = window.matchMedia('(hover: none), (pointer: coarse)').matches;
+        const isDesktop = window.innerWidth > 1024 && !isTouch;
+        if (isDesktop) {
+          e.preventDefault();
+          const deal = link.getAttribute('data-deal') || 'Exclusive Spa Package';
+          const code = (localStorage.getItem('lumia_code_revealed') === 'true') ? CODE_UNMASKED : 'LUMIA-VIP30';
+          const text = encodeURIComponent(`Hello Lumia International Spa, I would like to know the offer price for ${deal} (Code: ${code}).`);
+          window.open(`https://web.whatsapp.com/send?phone=919019663937&text=${text}`, '_blank', 'noopener');
+        }
+      });
+    });
+
+    // Toast helper
+    function showToast(msg) {
+      let toast = document.getElementById('lumiaToast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'lumiaToast';
+        toast.style.cssText = 'position:fixed;top:28px;left:50%;transform:translateX(-50%) translateY(-20px);background:rgba(33,26,20,.95);border:1px solid rgba(212,175,55,.6);color:#f7dfc2;padding:12px 24px;border-radius:9999px;font-size:13px;font-family:Comfortaa,sans-serif;z-index:999;box-shadow:0 12px 30px rgba(0,0,0,.5);opacity:0;transition:all .35s ease;pointer-events:none;text-align:center;max-width:90vw;';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = msg;
+      requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(-50%) translateY(0)';
+      });
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-50%) translateY(-20px)';
+      }, 4000);
+    }
+
+    // 4. Exit Pop-up & Right-Side Display Behavior
+    // User requirement:
+    // "Exit pop up on website with timer add it on right side and it should come when will scroll also it should display all the time"
+    let isPopupOpen = false;
+    let isDismissed = sessionStorage.getItem('lumia_popup_dismissed') === 'true';
+
+    function openPopup() {
+      if (isPopupOpen) return;
+      isPopupOpen = true;
+      if (popup) popup.classList.add('is-visible');
+      if (badge) badge.classList.remove('is-visible');
+    }
+
+    function closePopup() {
+      isPopupOpen = false;
+      isDismissed = true;
+      sessionStorage.setItem('lumia_popup_dismissed', 'true');
+      if (popup) popup.classList.remove('is-visible');
+      // Show badge so it displays all the time on the right side!
+      if (badge) badge.classList.add('is-visible');
+    }
+
+    if (closeBtn) closeBtn.addEventListener('click', closePopup);
+    if (dismissBtn) dismissBtn.addEventListener('click', closePopup);
+    if (badge) badge.addEventListener('click', () => {
+      isDismissed = false;
+      openPopup();
+    });
+
+    // Scroll trigger: when visitor scrolls past 220px, slide in on the right
+    let scrollTriggered = false;
+    window.addEventListener('scroll', () => {
+      if (!scrollTriggered && window.scrollY > 220) {
+        scrollTriggered = true;
+        if (!isDismissed) {
+          openPopup();
+        } else {
+          // If previously dismissed, ensure the badge is displaying all the time!
+          if (badge) badge.classList.add('is-visible');
+        }
+      }
+    }, { passive: true });
+
+    // Desktop exit-intent trigger: mouse moving towards the top
+    let exitTriggered = false;
+    document.addEventListener('mouseleave', (e) => {
+      if (!exitTriggered && e.clientY <= 12) {
+        exitTriggered = true;
+        openPopup();
+      }
+    });
+
+    // If already scrolled on page load or after a short delay, display appropriately
+    setTimeout(() => {
+      if (window.scrollY > 150) {
+        if (!isDismissed) openPopup();
+        else if (badge) badge.classList.add('is-visible');
+      } else if (isDismissed && badge) {
+        badge.classList.add('is-visible');
+      }
+    }, 1200);
+  }
 })();
+
