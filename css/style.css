@@ -437,6 +437,7 @@ a:hover { color: #54442f; }
   /* A couple of oversized card paddings worth shrinking specifically */
   [style*="padding:56px;"], [style*='padding:56px"'], [style*="padding: 56px;"], [style*='padding: 56px"'] { padding: 28px !important; }
   [style*="padding:36px;"], [style*='padding:36px"'], [style*="padding: 36px;"], [style*='padding: 36px"'] { padding: 24px !important; }
+  [style*="padding:0 64px"], [style*="padding: 0 64px"] { padding: 0 24px !important; }
 
   /* Desktop "overlap" cards tuck themselves over the neighbouring image with
      a negative left margin. Once the grid collapses to one column there is no
@@ -515,16 +516,15 @@ a:hover { color: #54442f; }
   /* Home hero art direction lives in its own breakpoints at the foot of this
      file — it no longer shares this one. See "Home hero art direction" there. */
 
-  /* About's hero photo is 3:2 landscape shown in a portrait viewport. At
-     `cover` the scale is driven entirely by the height, so there is no
-     vertical overflow left to slide the crop through and the guest's face
-     sits pinned at mid-height — exactly where the headline and body copy
-     are. Oversizing the art to 135% of the frame's height creates that
-     headroom, and a low Y then pushes the whole image down so her face
-     clears the copy; the X keeps her horizontally centred at that scale. */
+  /* About's hero photo features the golden Buddha statue in the central archway
+     at horizontal 51%. In mobile portrait view, centre the crop directly on the
+     Buddha with cover sizing so the iconic sanctuary focal point is proudly displayed. */
   #aboutBg {
-    background-size: auto 135% !important;
-    background-position: 88% 0% !important;
+    background-size: cover !important;
+    background-position: 51% center !important;
+  }
+  #aboutScrim {
+    background: linear-gradient(180deg, rgba(24,16,5,.82) 0%, rgba(24,16,5,.38) 48%, rgba(24,16,5,.75) 100%) !important;
   }
 
   /* The Book hero has the same problem mirrored: its guest sat dead centre,
