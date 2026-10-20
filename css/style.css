@@ -516,21 +516,17 @@ a:hover { color: #54442f; }
   /* Home hero art direction lives in its own breakpoints at the foot of this
      file — it no longer shares this one. See "Home hero art direction" there. */
 
-  /* About's hero photo features the golden Buddha statue in the central archway
-     at horizontal 51%. In mobile portrait view, centre the crop directly on the
-     Buddha with cover sizing so the iconic sanctuary focal point is proudly displayed. */
+  /* About's hero now uses the lounge reception photo (book-your-appointment.jpg).
+     Centre it normally on mobile. */
   #aboutBg {
     background-size: cover !important;
-    background-position: 51% center !important;
+    background-position: center center !important;
   }
   #aboutScrim {
     background: linear-gradient(180deg, rgba(24,16,5,.82) 0%, rgba(24,16,5,.38) 48%, rgba(24,16,5,.75) 100%) !important;
   }
 
-  /* The Book hero has the same problem mirrored: its guest sat dead centre,
-     directly behind "Book Your Appointment". Lowering X slides the crop left,
-     which carries her to the right — at 69% her face clears the widest
-     headline line (which ends ~245px in) while her hair stays in frame. */
+  /* The Book hero now uses reception-welcome.jpg — no special crop needed. */
   #heroBg[style*="jacuzzi-hydrotherapy.jpg"] { background-position: 69% center !important; }
 
   /* Copy marked .mob-hide is desktop-only — trimmed on phones where a long
